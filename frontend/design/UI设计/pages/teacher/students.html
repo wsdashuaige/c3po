@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生管理 - 教师端</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: var(--card-background); border-right: 1px solid var(--border-color); padding: var(--spacing-lg); overflow-y: auto; z-index: 1000; }
+        .sidebar-brand { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xl); text-align: center; }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: var(--spacing-sm); }
+        .sidebar-nav a { display: flex; align-items: center; padding: var(--spacing-md); color: var(--text-secondary); text-decoration: none; border-radius: var(--border-radius); transition: all 0.2s ease; gap: var(--spacing-md); }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .main-content { margin-left: 250px; padding: var(--spacing-lg); min-height: 100vh; }
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-md); }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--spacing-lg); }
+        .student-card { display: flex; gap: var(--spacing-md); align-items: center; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--secondary-color); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .meta { color: var(--text-secondary); font-size: var(--font-size-sm); }
+        .actions { display: flex; gap: var(--spacing-sm); }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html">📚 课程管理</a></li>
+            <li><a href="assignments.html">📝 作业管理</a></li>
+            <li><a href="grades.html">📊 成绩管理</a></li>
+            <li><a href="students.html" class="active">👥 学生管理</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="card">
+            <div class="card-header">
+                <div class="card-title">学生管理</div>
+                <div class="actions">
+                    <button class="btn btn-secondary btn-sm">导出名册</button>
+                    <button class="btn btn-primary btn-sm">添加学生</button>
+                </div>
+            </div>
+            <div class="filters mb-4">
+                <select class="form-input form-select">
+                    <option>选择课程</option>
+                    <option>数据结构与算法</option>
+                    <option>算法设计与分析</option>
+                    <option>计算机图形学</option>
+                </select>
+                <input class="form-input" placeholder="搜索学生姓名/学号">
+                <button class="btn btn-primary">查询</button>
+            </div>
+
+            <div class="cards">
+                <div class="card student-card">
+                    <div class="avatar">张</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;">张三 <span class="meta">• 20230001</span></div>
+                        <div class="meta">数据结构与算法 • 进度 76%</div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm">详情</button>
+                        <button class="btn btn-primary btn-sm">发送消息</button>
+                    </div>
+                </div>
+
+                <div class="card student-card">
+                    <div class="avatar" style="background: var(--primary-color);">李</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;">李四 <span class="meta">• 20230002</span></div>
+                        <div class="meta">算法设计与分析 • 进度 52%</div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm">详情</button>
+                        <button class="btn btn-primary btn-sm">发送消息</button>
+                    </div>
+                </div>
+
+                <div class="card student-card">
+                    <div class="avatar" style="background: var(--success-color);">王</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:600;">王五 <span class="meta">• 20230003</span></div>
+                        <div class="meta">计算机图形学 • 进度 41%</div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-sm">详情</button>
+                        <button class="btn btn-primary btn-sm">发送消息</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
+

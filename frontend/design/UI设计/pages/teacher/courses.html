@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程管理 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: var(--spacing-lg);
+        }
+        
+        .course-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .course-header {
+            padding: var(--spacing-lg);
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+            position: relative;
+        }
+        
+        .course-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .course-info {
+            opacity: 0.9;
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .course-status {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-md);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 20px;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .course-content {
+            padding: var(--spacing-lg);
+        }
+        
+        .course-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .course-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+        
+        .course-actions .btn {
+            font-size: var(--font-size-sm);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: var(--font-size-xl);
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--spacing-sm);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+            margin-top: var(--spacing-xl);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html" class="active">📚 课程管理</a></li>
+            <li><a href="assignments.html">📝 作业管理</a></li>
+            <li><a href="grades.html">📊 成绩管理</a></li>
+            <li><a href="students.html">👥 学生管理</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">课程管理</h1>
+                <button class="btn btn-primary" onclick="openCreateModal()">创建新课程</button>
+            </div>
+        </header>
+
+        <div class="course-grid" id="course-grid">
+            <!-- 课程卡片将通过JavaScript动态生成 -->
+        </div>
+    </main>
+
+    <!-- 创建课程模态框 -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">创建新课程</h2>
+                <button class="modal-close" onclick="closeModal('createModal')">&times;</button>
+            </div>
+            
+            <form id="createCourseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">课程名称</label>
+                        <input type="text" class="form-input" name="courseName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">课程代码</label>
+                        <input type="text" class="form-input" name="courseCode" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">学期</label>
+                        <select class="form-input form-select" name="semester" required>
+                            <option value="">请选择学期</option>
+                            <option value="spring">春季学期</option>
+                            <option value="fall">秋季学期</option>
+                            <option value="summer">夏季学期</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">学分</label>
+                        <input type="number" class="form-input" name="credits" min="1" max="10" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">课程描述</label>
+                    <textarea class="form-input form-textarea" name="description" placeholder="请输入课程描述..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">创建课程</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 编辑课程模态框 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">编辑课程</h2>
+                <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            
+            <form id="editCourseForm">
+                <input type="hidden" name="courseId">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">课程名称</label>
+                        <input type="text" class="form-input" name="courseName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">课程代码</label>
+                        <input type="text" class="form-input" name="courseCode" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">学期</label>
+                        <select class="form-input form-select" name="semester" required>
+                            <option value="">请选择学期</option>
+                            <option value="spring">春季学期</option>
+                            <option value="fall">秋季学期</option>
+                            <option value="summer">夏季学期</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">学分</label>
+                        <input type="number" class="form-input" name="credits" min="1" max="10" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">课程描述</label>
+                    <textarea class="form-input form-textarea" name="description" placeholder="请输入课程描述..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 模拟课程数据
+        const courses = [
+            {
+                id: 1,
+                name: '数据结构与算法',
+                code: 'CS201',
+                semester: 'spring',
+                credits: 4,
+                description: '本课程介绍数据结构的基本概念和算法设计方法，包括线性表、栈、队列、树、图等数据结构的实现和应用。',
+                status: 'active',
+                students: 45,
+                chapters: 12,
+                assignments: 8
+            },
+            {
+                id: 2,
+                name: '算法设计与分析',
+                code: 'CS301',
+                semester: 'fall',
+                credits: 3,
+                description: '本课程深入探讨算法设计技术和复杂度分析方法，包括分治法、动态规划、贪心算法等。',
+                status: 'active',
+                students: 32,
+                chapters: 10,
+                assignments: 6
+            },
+            {
+                id: 3,
+                name: '计算机图形学',
+                code: 'CS401',
+                semester: 'spring',
+                credits: 3,
+                description: '本课程介绍计算机图形学的基本理论和实践技术，包括图形变换、光照模型、纹理映射等。',
+                status: 'draft',
+                students: 28,
+                chapters: 8,
+                assignments: 5
+            }
+        ];
+
+        function getSemesterText(semester) {
+            const semesterMap = {
+                'spring': '春季学期',
+                'fall': '秋季学期',
+                'summer': '夏季学期'
+            };
+            return semesterMap[semester] || semester;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'active': '进行中',
+                'draft': '草稿',
+                'completed': '已完成'
+            };
+            return statusMap[status] || status;
+        }
+
+        function renderCourses() {
+            const courseGrid = document.getElementById('course-grid');
+            
+            courseGrid.innerHTML = courses.map(course => `
+                <div class="course-card">
+                    <div class="course-header">
+                        <h3 class="course-title">${course.name}</h3>
+                        <p class="course-info">${course.code} • ${getSemesterText(course.semester)} • ${course.credits}学分</p>
+                        <span class="course-status">${getStatusText(course.status)}</span>
+                    </div>
+                    <div class="course-content">
+                        <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg); font-size: var(--font-size-sm); line-height: 1.5;">
+                            ${course.description}
+                        </p>
+                        
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">${course.students}</div>
+                                <div class="stat-label">学生数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${course.chapters}</div>
+                                <div class="stat-label">章节数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${course.assignments}</div>
+                                <div class="stat-label">作业数</div>
+                            </div>
+                        </div>
+                        
+                        <div class="course-actions">
+                            <button class="btn btn-primary" onclick="editCourse(${course.id})">编辑</button>
+                            <button class="btn btn-secondary" onclick="manageCourse(${course.id})">管理</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function editCourse(courseId) {
+            const course = courses.find(c => c.id === courseId);
+            if (course) {
+                const form = document.getElementById('editCourseForm');
+                form.elements.courseId.value = course.id;
+                form.elements.courseName.value = course.name;
+                form.elements.courseCode.value = course.code;
+                form.elements.semester.value = course.semester;
+                form.elements.credits.value = course.credits;
+                form.elements.description.value = course.description;
+                
+                document.getElementById('editModal').classList.add('active');
+            }
+        }
+
+        function manageCourse(courseId) {
+            alert(`管理课程 ${courseId} - 实际项目中会跳转到课程详情页面`);
+        }
+
+        // 表单提交处理
+        document.getElementById('createCourseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const newCourse = {
+                id: courses.length + 1,
+                name: formData.get('courseName'),
+                code: formData.get('courseCode'),
+                semester: formData.get('semester'),
+                credits: parseInt(formData.get('credits')),
+                description: formData.get('description'),
+                status: 'draft',
+                students: 0,
+                chapters: 0,
+                assignments: 0
+            };
+            
+            courses.push(newCourse);
+            renderCourses();
+            closeModal('createModal');
+            this.reset();
+            
+            alert('课程创建成功！');
+        });
+
+        document.getElementById('editCourseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const courseId = parseInt(formData.get('courseId'));
+            const course = courses.find(c => c.id === courseId);
+            
+            if (course) {
+                course.name = formData.get('courseName');
+                course.code = formData.get('courseCode');
+                course.semester = formData.get('semester');
+                course.credits = parseInt(formData.get('credits'));
+                course.description = formData.get('description');
+                
+                renderCourses();
+                closeModal('editModal');
+                
+                alert('课程修改成功！');
+            }
+        });
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCourses();
+        });
+    </script>
+</body>
+</html>

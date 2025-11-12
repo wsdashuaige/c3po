@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程审核 - 管理后台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .table-card {
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            background: var(--background-color);
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .status-badge.approved {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-badge.rejected {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+
+        .actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="users.html">👥 用户管理</a></li>
+            <li><a href="courses.html" class="active">📚 课程审核</a></li>
+            <li><a href="statistics.html">📊 数据统计</a></li>
+            <li><a href="settings.html">⚙️ 系统设置</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-content">
+                <h1>课程审核</h1>
+                <div class="actions">
+                    <button class="btn btn-secondary">导出列表</button>
+                    <button class="btn btn-primary">新建课程</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="card">
+            <h2 class="section-title">筛选条件</h2>
+            <div class="filters">
+                <div>
+                    <label class="form-label">关键词</label>
+                    <input class="form-input" placeholder="课程名/教师名">
+                </div>
+                <div>
+                    <label class="form-label">状态</label>
+                    <select class="form-input form-select">
+                        <option>全部</option>
+                        <option>待审核</option>
+                        <option>已通过</option>
+                        <option>已驳回</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">学期</label>
+                    <select class="form-input form-select">
+                        <option>全部</option>
+                        <option>春季学期</option>
+                        <option>秋季学期</option>
+                    </select>
+                </div>
+                <div class="flex items-center" style="margin-top: auto;">
+                    <button class="btn btn-primary">查询</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card table-card">
+            <div class="card-header">
+                <div class="card-title">课程列表</div>
+                <div class="actions">
+                    <button class="btn btn-secondary btn-sm">批量通过</button>
+                    <button class="btn btn-secondary btn-sm">批量驳回</button>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox"></th>
+                            <th>课程名</th>
+                            <th>教师</th>
+                            <th>学期</th>
+                            <th>申请时间</th>
+                            <th>状态</th>
+                            <th style="width: 220px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td>人工智能基础</td>
+                            <td>王老师</td>
+                            <td>春季学期</td>
+                            <td>2025-03-01</td>
+                            <td><span class="status-badge pending">待审核</span></td>
+                            <td class="actions">
+                                <button class="btn btn-primary btn-sm">通过</button>
+                                <button class="btn btn-danger btn-sm">驳回</button>
+                                <a class="btn btn-secondary btn-sm" href="#">详情</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td>数据可视化</td>
+                            <td>李教授</td>
+                            <td>秋季学期</td>
+                            <td>2025-03-02</td>
+                            <td><span class="status-badge approved">已通过</span></td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm">撤回</button>
+                                <a class="btn btn-secondary btn-sm" href="#">详情</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td>云计算导论</td>
+                            <td>陈老师</td>
+                            <td>春季学期</td>
+                            <td>2025-03-03</td>
+                            <td><span class="status-badge rejected">已驳回</span></td>
+                            <td class="actions">
+                                <button class="btn btn-primary btn-sm">重新提交</button>
+                                <a class="btn btn-secondary btn-sm" href="#">详情</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+</body>
+
+</html>

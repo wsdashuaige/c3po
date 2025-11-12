@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作业管理 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .assignment-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .stat-card {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .stat-number.total { color: var(--primary-color); }
+        .stat-number.pending { color: var(--warning-color); }
+        .stat-number.graded { color: var(--success-color); }
+        .stat-number.overdue { color: var(--danger-color); }
+        
+        .filter-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            background: var(--card-background);
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .filter-tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .assignment-list {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+        }
+        
+        .assignment-item {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+        
+        .assignment-item:last-child {
+            border-bottom: none;
+        }
+        
+        .assignment-item:hover {
+            background: var(--background-color);
+        }
+        
+        .assignment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .assignment-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .assignment-course {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .assignment-status {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 20px;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .status-graded {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-color);
+        }
+        
+        .status-overdue {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .assignment-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .assignment-description {
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
+            line-height: 1.5;
+        }
+        
+        .assignment-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: var(--font-size-xl);
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--spacing-sm);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+            margin-top: var(--spacing-xl);
+        }
+        
+        .submission-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .submission-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+            gap: var(--spacing-md);
+        }
+        
+        .submission-info {
+            flex: 1;
+        }
+        
+        .submission-student {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .submission-time {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .submission-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        /* 右侧抽屉 */
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 420px;
+            height: 100vh;
+            background: var(--card-background);
+            box-shadow: var(--shadow-heavy);
+            border-left: 1px solid var(--border-color);
+            z-index: 2100;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .drawer.active { right: 0; }
+        .drawer-header { padding: var(--spacing-lg); border-bottom: 1px solid var(--border-color); display:flex; justify-content: space-between; align-items:center; }
+        .drawer-title { font-weight: 600; }
+        .drawer-body { padding: var(--spacing-lg); overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html">📚 课程管理</a></li>
+            <li><a href="assignments.html" class="active">📝 作业管理</a></li>
+            <li><a href="grades.html">📊 成绩管理</a></li>
+            <li><a href="students.html">👥 学生管理</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">作业管理</h1>
+                <button class="btn btn-primary" onclick="openCreateModal()">创建作业</button>
+            </div>
+        </header>
+
+        <div class="assignment-stats">
+            <div class="stat-card">
+                <div class="stat-number total">15</div>
+                <div class="stat-label">总作业数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number pending">23</div>
+                <div class="stat-label">待批改</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number graded">87</div>
+                <div class="stat-label">已批改</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number overdue">5</div>
+                <div class="stat-label">逾期未交</div>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterAssignments('all')">全部作业</button>
+            <button class="filter-tab" onclick="filterAssignments('pending')">待批改</button>
+            <button class="filter-tab" onclick="filterAssignments('graded')">已批改</button>
+            <button class="filter-tab" onclick="filterAssignments('overdue')">逾期未交</button>
+        </div>
+
+        <div class="assignment-list" id="assignment-list">
+            <!-- 作业列表将通过JavaScript动态生成 -->
+        </div>
+    </main>
+
+    <!-- 批改详情抽屉 -->
+    <aside id="gradeDrawer" class="drawer" aria-hidden="true">
+        <div class="drawer-header">
+            <div class="drawer-title">批改详情</div>
+            <button class="modal-close" onclick="closeDrawer()">&times;</button>
+        </div>
+        <div class="drawer-body">
+            <div class="card" style="box-shadow:none; border:1px solid var(--border-color);">
+                <div class="card-header">
+                    <div class="card-title">当前学生</div>
+                </div>
+                <div class="submission-item" style="border:none; padding:0;">
+                    <div class="submission-info">
+                        <div class="submission-student">张三 (202201001)</div>
+                        <div class="submission-time">提交时间：2024-01-15 14:30</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; border:1px solid var(--border-color); margin-top: var(--spacing-lg);">
+                <div class="card-header">
+                    <div class="card-title">作业内容</div>
+                </div>
+                <div class="text-muted">这里展示学生提交的内容占位（文本/附件链接/预览）。</div>
+                <div class="text-right" style="margin-top: var(--spacing-md);">
+                    <button class="btn btn-secondary btn-sm">下载附件</button>
+                </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; border:1px solid var(--border-color); margin-top: var(--spacing-lg);">
+                <div class="card-header">
+                    <div class="card-title">评分与反馈</div>
+                </div>
+                <div class="form-row" style="grid-template-columns: 1fr;">
+                    <input type="number" placeholder="分数（0-100）" class="form-input" min="0" max="100">
+                    <textarea class="form-input form-textarea" placeholder="填写评语..." style="min-height: 120px;"></textarea>
+                </div>
+                <div class="text-right">
+                    <button class="btn btn-secondary">暂存</button>
+                    <button class="btn btn-primary">提交评分</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- 创建作业模态框 -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">创建作业</h2>
+                <button class="modal-close" onclick="closeModal('createModal')">&times;</button>
+            </div>
+            
+            <form id="createAssignmentForm">
+                <div class="form-group">
+                    <label class="form-label">作业标题</label>
+                    <input type="text" class="form-input" name="title" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">所属课程</label>
+                        <select class="form-input form-select" name="courseId" required>
+                            <option value="">请选择课程</option>
+                            <option value="1">数据结构与算法</option>
+                            <option value="2">算法设计与分析</option>
+                            <option value="3">计算机图形学</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">作业类型</label>
+                        <select class="form-input form-select" name="type" required>
+                            <option value="">请选择类型</option>
+                            <option value="homework">作业</option>
+                            <option value="experiment">实验</option>
+                            <option value="project">项目</option>
+                            <option value="report">报告</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">截止时间</label>
+                        <input type="datetime-local" class="form-input" name="deadline" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">满分</label>
+                        <input type="number" class="form-input" name="maxScore" min="1" max="100" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">作业描述</label>
+                    <textarea class="form-input form-textarea" name="description" placeholder="请输入作业要求..." required></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createModal')">取消</button>
+                    <button type="submit" class="btn btn-primary">创建作业</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 批改作业模态框 -->
+    <div id="gradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">批改作业</h2>
+                <button class="modal-close" onclick="closeModal('gradeModal')">&times;</button>
+            </div>
+            
+            <div class="submission-list" id="submission-list">
+                <!-- 提交列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟作业数据
+        const assignments = [
+            {
+                id: 1,
+                title: '链表操作实验',
+                course: '数据结构与算法',
+                type: 'experiment',
+                deadline: '2024-01-20T23:59',
+                maxScore: 100,
+                description: '完成链表的创建、插入、删除操作，并编写相应的测试程序。要求代码规范，注释清晰。',
+                status: 'pending',
+                submissions: 15,
+                graded: 0
+            },
+            {
+                id: 2,
+                title: 'Web前端个人博客项目',
+                course: 'Web前端开发',
+                type: 'project',
+                deadline: '2024-01-15T23:59',
+                maxScore: 100,
+                description: '使用HTML、CSS、JavaScript创建一个响应式个人博客网站，包含首页、文章列表、文章详情等页面。',
+                status: 'graded',
+                submissions: 28,
+                graded: 28
+            },
+            {
+                id: 3,
+                title: '数据库设计作业',
+                course: '数据库原理',
+                type: 'homework',
+                deadline: '2024-01-10T23:59',
+                maxScore: 100,
+                description: '设计一个学生管理系统的数据库，包含ER图、关系模式、SQL语句等。',
+                status: 'overdue',
+                submissions: 12,
+                graded: 10
+            }
+        ];
+
+        function getTypeText(type) {
+            const typeMap = {
+                'homework': '作业',
+                'experiment': '实验',
+                'project': '项目',
+                'report': '报告'
+            };
+            return typeMap[type] || type;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '待批改',
+                'graded': '已批改',
+                'overdue': '逾期未交'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+
+        function renderAssignments(filter = 'all') {
+            const assignmentList = document.getElementById('assignment-list');
+            let filteredAssignments = assignments;
+
+            if (filter !== 'all') {
+                filteredAssignments = assignments.filter(assignment => assignment.status === filter);
+            }
+
+            assignmentList.innerHTML = filteredAssignments.map(assignment => `
+                <div class="assignment-item" data-status="${assignment.status}">
+                    <div class="assignment-header">
+                        <div>
+                            <h3 class="assignment-title">${assignment.title}</h3>
+                            <p class="assignment-course">${assignment.course} - ${getTypeText(assignment.type)}</p>
+                        </div>
+                        <span class="assignment-status status-${assignment.status}">
+                            ${getStatusText(assignment.status)}
+                        </span>
+                    </div>
+                    
+                    <div class="assignment-description">
+                        ${assignment.description}
+                    </div>
+                    
+                    <div class="assignment-details">
+                        <div class="detail-item">
+                            <span>📅</span>
+                            <span>截止时间：${formatDate(assignment.deadline)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>📤</span>
+                            <span>已提交：${assignment.submissions}份</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>📊</span>
+                            <span>已批改：${assignment.graded}份</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>⭐</span>
+                            <span>满分：${assignment.maxScore}分</span>
+                        </div>
+                    </div>
+                    
+                    <div class="assignment-actions">
+                        ${assignment.status === 'pending' ? `
+                            <button class="btn btn-primary" onclick="gradeAssignment(${assignment.id})">
+                                批改作业
+                            </button>
+                        ` : `
+                            <button class="btn btn-secondary" onclick="viewGrades(${assignment.id})">
+                                查看成绩
+                            </button>
+                        `}
+                        <button class="btn btn-secondary" onclick="editAssignment(${assignment.id})">
+                            编辑作业
+                        </button>
+                        <button class="btn btn-secondary" onclick="viewSubmissions(${assignment.id})">
+                            查看提交
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterAssignments(filter) {
+            // 更新标签状态
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 渲染作业
+            renderAssignments(filter);
+        }
+
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function gradeAssignment(assignmentId) {
+            // 模拟获取提交数据
+            const submissions = [
+                { id: 1, student: '张三', studentId: '202201001', submitTime: '2024-01-15 14:30', score: null, feedback: '' },
+                { id: 2, student: '李四', studentId: '202201002', submitTime: '2024-01-15 16:20', score: null, feedback: '' },
+                { id: 3, student: '王五', studentId: '202201003', submitTime: '2024-01-16 10:15', score: null, feedback: '' }
+            ];
+            
+            renderSubmissions(submissions);
+            document.getElementById('gradeModal').classList.add('active');
+            // 同步打开右侧抽屉，展示当前选中提交详情（静态占位）
+            openDrawer();
+        }
+
+        function openDrawer(){
+            document.getElementById('gradeDrawer').classList.add('active');
+        }
+        function closeDrawer(){
+            document.getElementById('gradeDrawer').classList.remove('active');
+        }
+
+        function renderSubmissions(submissions) {
+            const submissionList = document.getElementById('submission-list');
+            
+            submissionList.innerHTML = submissions.map(submission => `
+                <div class="submission-item">
+                    <div class="submission-info">
+                        <div class="submission-student">${submission.student} (${submission.studentId})</div>
+                        <div class="submission-time">提交时间：${submission.submitTime}</div>
+                    </div>
+                    <div class="submission-actions">
+                        <input type="number" placeholder="分数" style="width: 80px; padding: var(--spacing-sm); border: 1px solid var(--border-color); border-radius: var(--spacing-xs);" min="0" max="100">
+                        <button class="btn btn-primary btn-sm">批改</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewGrades(assignmentId) {
+            alert(`查看作业 ${assignmentId} 的成绩统计`);
+        }
+
+        function editAssignment(assignmentId) {
+            alert(`编辑作业 ${assignmentId}`);
+        }
+
+        function viewSubmissions(assignmentId) {
+            alert(`查看作业 ${assignmentId} 的提交详情`);
+        }
+
+        // 表单提交处理
+        document.getElementById('createAssignmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const newAssignment = {
+                id: assignments.length + 1,
+                title: formData.get('title'),
+                course: getCourseName(formData.get('courseId')),
+                type: formData.get('type'),
+                deadline: formData.get('deadline'),
+                maxScore: parseInt(formData.get('maxScore')),
+                description: formData.get('description'),
+                status: 'pending',
+                submissions: 0,
+                graded: 0
+            };
+            
+            assignments.push(newAssignment);
+            renderAssignments(document.querySelector('.filter-tab.active').textContent);
+            closeModal('createModal');
+            this.reset();
+            
+            alert('作业创建成功！');
+        });
+
+        function getCourseName(courseId) {
+            const courseMap = {
+                '1': '数据结构与算法',
+                '2': '算法设计与分析',
+                '3': '计算机图形学'
+            };
+            return courseMap[courseId] || '未知课程';
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAssignments('all');
+        });
+    </script>
+</body>
+</html>

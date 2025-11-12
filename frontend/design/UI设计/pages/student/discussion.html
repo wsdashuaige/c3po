@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程讨论区 - 学生端</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: var(--card-background); border-right: 1px solid var(--border-color); padding: var(--spacing-lg); overflow-y: auto; z-index: 1000; }
+        .sidebar-brand { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xl); text-align: center; }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: var(--spacing-sm); }
+        .sidebar-nav a { display: flex; align-items: center; padding: var(--spacing-md); color: var(--text-secondary); text-decoration: none; border-radius: var(--border-radius); transition: all 0.2s ease; gap: var(--spacing-md); }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .main-content { margin-left: 250px; padding: var(--spacing-lg); min-height: 100vh; }
+        .topic { padding: var(--spacing-md) 0; border-bottom: 1px solid var(--border-color); }
+        .topic-title { font-weight: 600; }
+        .topic-meta { color: var(--text-secondary); font-size: var(--font-size-sm); margin-top: 4px; }
+        .new-post { display: grid; gap: var(--spacing-md); }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html">📚 我的课程</a></li>
+            <li><a href="assignments.html">📝 作业</a></li>
+            <li><a href="grades.html">📊 成绩</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="card">
+            <div class="card-header">
+                <div class="card-title">课程讨论区</div>
+            </div>
+            <div class="new-post">
+                <input class="form-input" placeholder="请输入话题标题，例如：第2章作业有一题不太懂...">
+                <textarea class="form-input form-textarea" placeholder="请输入内容..."></textarea>
+                <div class="text-right">
+                    <button class="btn btn-secondary">清空</button>
+                    <button class="btn btn-primary">发布</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <div class="card-title">最近话题</div>
+            </div>
+            <div class="topic">
+                <div class="topic-title">关于第2章线性表的时间复杂度</div>
+                <div class="topic-meta">张三 • 2小时前 • 5条回复</div>
+            </div>
+            <div class="topic">
+                <div class="topic-title">作业1第3题思路求助</div>
+                <div class="topic-meta">李四 • 1天前 • 8条回复</div>
+            </div>
+            <div class="topic">
+                <div class="topic-title">期中考试范围说明</div>
+                <div class="topic-meta">助教 • 2天前 • 3条回复</div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
+

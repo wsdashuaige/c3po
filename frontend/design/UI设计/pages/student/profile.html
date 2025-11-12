@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .profile-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: var(--spacing-lg);
+        }
+        
+        .profile-sidebar {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            padding: var(--spacing-lg);
+            height: fit-content;
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: 700;
+            margin: 0 auto var(--spacing-lg);
+        }
+        
+        .profile-name {
+            text-align: center;
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .profile-info {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .profile-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: var(--spacing-md);
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .profile-main {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            padding: var(--spacing-lg);
+        }
+        
+        .profile-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .profile-tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .profile-tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .profile-section {
+            display: none;
+        }
+        
+        .profile-section.active {
+            display: block;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+            margin-top: var(--spacing-xl);
+        }
+        
+        .security-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .security-info {
+            flex: 1;
+        }
+        
+        .security-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .security-description {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: var(--spacing-md);
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 122, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .activity-time {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .file-upload:hover {
+            border-color: var(--primary-color);
+        }
+        
+        .file-upload-icon {
+            font-size: 48px;
+            color: var(--text-tertiary);
+            margin-bottom: var(--spacing-md);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html">📚 我的课程</a></li>
+            <li><a href="assignments.html">📝 作业</a></li>
+            <li><a href="grades.html">📊 成绩</a></li>
+            <li><a href="profile.html" class="active">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="page-header">
+            <h1 class="page-title">个人中心</h1>
+        </header>
+
+        <div class="profile-content">
+            <div class="profile-sidebar">
+                <div class="profile-avatar">张</div>
+                <h2 class="profile-name">张三</h2>
+                <p class="profile-info">计算机科学与技术专业<br>2022级本科生</p>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">已选课程</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">87.5</div>
+                        <div class="stat-label">平均成绩</div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary w-full">编辑资料</button>
+            </div>
+
+            <div class="profile-main">
+                <div class="profile-tabs">
+                    <button class="profile-tab active" onclick="showSection('personal')">个人信息</button>
+                    <button class="profile-tab" onclick="showSection('security')">安全设置</button>
+                    <button class="profile-tab" onclick="showSection('activity')">活动记录</button>
+                    <button class="profile-tab" onclick="showSection('preferences')">偏好设置</button>
+                </div>
+
+                <!-- 个人信息 -->
+                <div id="personal-section" class="profile-section active">
+                    <form>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">姓名</label>
+                                <input type="text" class="form-input" value="张三" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">学号</label>
+                                <input type="text" class="form-input" value="202201001" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">邮箱</label>
+                                <input type="email" class="form-input" value="zhangsan@student.edu.cn">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">手机号</label>
+                                <input type="tel" class="form-input" value="13812345678">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">专业</label>
+                                <input type="text" class="form-input" value="计算机科学与技术">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">年级</label>
+                                <input type="text" class="form-input" value="2022级">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">个人简介</label>
+                            <textarea class="form-input form-textarea" placeholder="介绍一下自己...">热爱编程，喜欢学习新技术，积极参与各种技术竞赛和项目实践。</textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary">取消</button>
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 安全设置 -->
+                <div id="security-section" class="profile-section">
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-title">修改密码</div>
+                            <div class="security-description">定期更新密码以保护账户安全</div>
+                        </div>
+                        <button class="btn btn-secondary">修改</button>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-title">两步验证</div>
+                            <div class="security-description">为账户添加额外的安全保护</div>
+                        </div>
+                        <button class="btn btn-secondary">设置</button>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-title">登录设备</div>
+                            <div class="security-description">查看和管理已登录的设备</div>
+                        </div>
+                        <button class="btn btn-secondary">查看</button>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-info">
+                            <div class="security-title">隐私设置</div>
+                            <div class="security-description">管理个人信息可见性</div>
+                        </div>
+                        <button class="btn btn-secondary">设置</button>
+                    </div>
+                </div>
+
+                <!-- 活动记录 -->
+                <div id="activity-section" class="profile-section">
+                    <div class="activity-item">
+                        <div class="activity-icon">📝</div>
+                        <div class="activity-content">
+                            <div class="activity-title">提交了《数据结构与算法》第3章作业</div>
+                            <div class="activity-time">2024-01-15 14:30</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="activity-icon">📚</div>
+                        <div class="activity-content">
+                            <div class="activity-title">完成了《Web前端开发》第5章学习</div>
+                            <div class="activity-time">2024-01-14 16:20</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="activity-icon">📊</div>
+                        <div class="activity-content">
+                            <div class="activity-title">查看了《数据库原理》成绩</div>
+                            <div class="activity-time">2024-01-12 10:15</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="activity-icon">🔐</div>
+                        <div class="activity-content">
+                            <div class="activity-title">修改了登录密码</div>
+                            <div class="activity-time">2024-01-10 09:30</div>
+                        </div>
+                    </div>
+                    
+                    <div class="activity-item">
+                        <div class="activity-icon">💬</div>
+                        <div class="activity-content">
+                            <div class="activity-title">在《数据结构与算法》讨论区发表了评论</div>
+                            <div class="activity-time">2024-01-08 20:45</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 偏好设置 -->
+                <div id="preferences-section" class="profile-section">
+                    <div class="form-group">
+                        <label class="form-label">主题模式</label>
+                        <select class="form-input form-select">
+                            <option value="light">浅色模式</option>
+                            <option value="dark">深色模式</option>
+                            <option value="auto">跟随系统</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">语言设置</label>
+                        <select class="form-input form-select">
+                            <option value="zh-CN">简体中文</option>
+                            <option value="en-US">English</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">通知设置</label>
+                        <div style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
+                            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                                <input type="checkbox" checked>
+                                <span>作业提醒</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                                <input type="checkbox" checked>
+                                <span>成绩通知</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                                <input type="checkbox">
+                                <span>课程更新</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">头像设置</label>
+                        <div class="file-upload">
+                            <div class="file-upload-icon">📷</div>
+                            <div>点击上传头像</div>
+                            <div style="font-size: var(--font-size-sm); color: var(--text-secondary); margin-top: var(--spacing-sm);">
+                                支持 JPG、PNG 格式，大小不超过 2MB
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary">重置</button>
+                        <button type="button" class="btn btn-primary">保存设置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function showSection(section) {
+            // 隐藏所有section
+            document.querySelectorAll('.profile-section').forEach(s => {
+                s.classList.remove('active');
+            });
+            
+            // 移除所有tab的active状态
+            document.querySelectorAll('.profile-tab').forEach(t => {
+                t.classList.remove('active');
+            });
+            
+            // 显示选中的section
+            document.getElementById(section + '-section').classList.add('active');
+            
+            // 激活选中的tab
+            event.target.classList.add('active');
+        }
+        
+        // 表单提交处理
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('保存成功！');
+            });
+        });
+        
+        // 文件上传处理
+        document.querySelector('.file-upload').addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    alert(`已选择文件: ${file.name}`);
+                }
+            };
+            input.click();
+        });
+    </script>
+</body>
+</html>

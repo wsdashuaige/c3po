@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面不存在 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--background-color) 0%, var(--card-background) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: var(--spacing-xl);
+        }
+        
+        .error-code {
+            font-size: 8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: var(--spacing-lg);
+            line-height: 1;
+            text-shadow: 0 4px 8px rgba(0, 122, 255, 0.1);
+        }
+        
+        .error-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .error-description {
+            font-size: var(--font-size-lg);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xl);
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .error-illustration {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto var(--spacing-xl);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            color: white;
+            box-shadow: var(--shadow-heavy);
+        }
+        
+        .suggestions {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+            box-shadow: var(--shadow-light);
+            text-align: left;
+        }
+        
+        .suggestions h3 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+        
+        .suggestion-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .suggestion-item {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            transition: background-color 0.2s ease;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-item:hover {
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+        }
+        
+        .suggestion-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 122, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+        
+        .suggestion-content {
+            flex: 1;
+        }
+        
+        .suggestion-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .suggestion-description {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 6rem;
+            }
+            
+            .error-title {
+                font-size: var(--font-size-xl);
+            }
+            
+            .error-description {
+                font-size: var(--font-size-md);
+            }
+            
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .error-actions .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .error-illustration {
+                width: 200px;
+                height: 200px;
+                font-size: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-illustration">🔍</div>
+        
+        <div class="error-code">404</div>
+        
+        <h1 class="error-title">页面不存在</h1>
+        
+        <p class="error-description">
+            抱歉，您访问的页面不存在或已被移除。<br>
+            请检查URL是否正确，或使用下面的导航返回。
+        </p>
+        
+        <div class="error-actions">
+            <a href="../../index.html" class="btn btn-primary">返回首页</a>
+            <button class="btn btn-secondary" onclick="history.back()">返回上页</button>
+        </div>
+        
+        <div class="suggestions">
+            <h3>您可能想要访问：</h3>
+            <ul class="suggestion-list">
+                <li class="suggestion-item">
+                    <div class="suggestion-icon">🏠</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">首页</div>
+                        <div class="suggestion-description">返回平台首页，选择您的身份登录</div>
+                    </div>
+                </li>
+                <li class="suggestion-item">
+                    <div class="suggestion-icon">👨‍🎓</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">学生登录</div>
+                        <div class="suggestion-description">学生用户登录入口</div>
+                    </div>
+                </li>
+                <li class="suggestion-item">
+                    <div class="suggestion-icon">👨‍🏫</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">教师登录</div>
+                        <div class="suggestion-description">教师用户登录入口</div>
+                    </div>
+                </li>
+                <li class="suggestion-item">
+                    <div class="suggestion-icon">👨‍💼</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">管理员登录</div>
+                        <div class="suggestion-description">系统管理员登录入口</div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 添加一些交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加页面加载动画
+            const container = document.querySelector('.error-container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // 添加建议项目的点击效果
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const title = this.querySelector('.suggestion-title').textContent;
+                    if (title.includes('首页')) {
+                        window.location.href = '../../index.html';
+                    } else if (title.includes('学生')) {
+                        window.location.href = '../student/login.html';
+                    } else if (title.includes('教师')) {
+                        window.location.href = '../teacher/login.html';
+                    } else if (title.includes('管理员')) {
+                        window.location.href = '../admin/login.html';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

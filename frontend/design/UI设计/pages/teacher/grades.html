@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩管理 - 教师端</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: var(--card-background); border-right: 1px solid var(--border-color); padding: var(--spacing-lg); overflow-y: auto; z-index: 1000; }
+        .sidebar-brand { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xl); text-align: center; }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: var(--spacing-sm); }
+        .sidebar-nav a { display: flex; align-items: center; padding: var(--spacing-md); color: var(--text-secondary); text-decoration: none; border-radius: var(--border-radius); transition: all 0.2s ease; gap: var(--spacing-md); }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .main-content { margin-left: 250px; padding: var(--spacing-lg); min-height: 100vh; }
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-md); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: var(--spacing-md); border-bottom: 1px solid var(--border-color); text-align: left; }
+        th { color: var(--text-secondary); font-weight: 600; background: var(--background-color); }
+        .actions { display: flex; gap: var(--spacing-sm); }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html">📚 课程管理</a></li>
+            <li><a href="assignments.html">📝 作业管理</a></li>
+            <li><a href="grades.html" class="active">📊 成绩管理</a></li>
+            <li><a href="students.html">👥 学生管理</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="card">
+            <div class="card-header">
+                <div class="card-title">成绩管理</div>
+                <div class="actions">
+                    <button class="btn btn-secondary btn-sm">导出成绩</button>
+                    <button class="btn btn-primary btn-sm">批量录入</button>
+                </div>
+            </div>
+            <div class="filters mb-4">
+                <select class="form-input form-select">
+                    <option>选择课程</option>
+                    <option>数据结构与算法</option>
+                    <option>算法设计与分析</option>
+                    <option>计算机图形学</option>
+                </select>
+                <select class="form-input form-select">
+                    <option>全部作业</option>
+                    <option>实验1</option>
+                    <option>实验2</option>
+                    <option>期中考试</option>
+                </select>
+                <input class="form-input" placeholder="搜索学生姓名/学号">
+                <button class="btn btn-primary">查询</button>
+            </div>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>学号</th>
+                            <th>学生姓名</th>
+                            <th>作业/考试</th>
+                            <th>分数</th>
+                            <th>评语</th>
+                            <th style="width: 180px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>20230001</td>
+                            <td>张三</td>
+                            <td>实验1</td>
+                            <td>85</td>
+                            <td>完成良好</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm">编辑</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>20230002</td>
+                            <td>李四</td>
+                            <td>实验1</td>
+                            <td>92</td>
+                            <td>表现优秀</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm">编辑</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>20230003</td>
+                            <td>王五</td>
+                            <td>期中考试</td>
+                            <td>78</td>
+                            <td>需加强复习</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm">编辑</button>
+                                <button class="btn btn-primary btn-sm">保存</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
+

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员首页 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .welcome-text {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--danger-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .stat-card {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .stat-number.users { color: var(--primary-color); }
+        .stat-number.teachers { color: var(--secondary-color); }
+        .stat-number.courses { color: var(--success-color); }
+        .stat-number.active { color: var(--warning-color); }
+        
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .recent-activities {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            padding: var(--spacing-lg);
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: var(--spacing-md);
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .activity-icon.user { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .activity-icon.course { background: rgba(52, 199, 89, 0.1); color: var(--success-color); }
+        .activity-icon.system { background: rgba(255, 149, 0, 0.1); color: var(--warning-color); }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .activity-time {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .pending-tasks {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            padding: var(--spacing-lg);
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: var(--spacing-md);
+        }
+        
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        
+        .task-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 59, 48, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--danger-color);
+        }
+        
+        .task-content {
+            flex: 1;
+        }
+        
+        .task-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .task-info {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .chart-container {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .chart-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+        }
+        
+        .chart-placeholder {
+            height: 300px;
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            border: 2px dashed var(--border-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html" class="active">🏠 首页</a></li>
+            <li><a href="users.html">👥 用户管理</a></li>
+            <li><a href="courses.html">📚 课程审核</a></li>
+            <li><a href="statistics.html">📊 数据统计</a></li>
+            <li><a href="settings.html">⚙️ 系统设置</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="welcome-text">系统管理后台</h1>
+                <div class="user-info">
+                    <div class="user-avatar">管</div>
+                    <span>系统管理员</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number users">2,456</div>
+                <div class="stat-label">总用户数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number teachers">128</div>
+                <div class="stat-label">教师数量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number courses">89</div>
+                <div class="stat-label">课程总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number active">1,892</div>
+                <div class="stat-label">活跃用户</div>
+            </div>
+        </div>
+
+        <div class="overview-grid">
+            <div class="recent-activities">
+                <h3 class="section-title">最近活动</h3>
+                <div class="activity-item">
+                    <div class="activity-icon user">👤</div>
+                    <div class="activity-content">
+                        <div class="activity-title">新用户注册</div>
+                        <div class="activity-time">张三同学注册了账号 • 5分钟前</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon course">📚</div>
+                    <div class="activity-content">
+                        <div class="activity-title">课程审核通过</div>
+                        <div class="activity-time">《人工智能基础》课程已审核通过 • 1小时前</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon user">👨‍🏫</div>
+                    <div class="activity-content">
+                        <div class="activity-title">教师账号激活</div>
+                        <div class="activity-time">李教授账号已激活 • 2小时前</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon system">⚙️</div>
+                    <div class="activity-content">
+                        <div class="activity-title">系统维护完成</div>
+                        <div class="activity-time">数据库优化维护已完成 • 3小时前</div>
+                    </div>
+                </div>
+                
+                <div class="activity-item">
+                    <div class="activity-icon course">📝</div>
+                    <div class="activity-content">
+                        <div class="activity-title">课程内容更新</div>
+                        <div class="activity-time">《数据结构与算法》课程资料已更新 • 1天前</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pending-tasks">
+                <h3 class="section-title">待处理任务</h3>
+                <div class="task-item">
+                    <div class="task-icon">📋</div>
+                    <div class="task-content">
+                        <div class="task-title">用户审核</div>
+                        <div class="task-info">12个新用户待审核</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary btn-sm">处理</button>
+                    </div>
+                </div>
+                
+                <div class="task-item">
+                    <div class="task-icon">📚</div>
+                    <div class="task-content">
+                        <div class="task-title">课程审核</div>
+                        <div class="task-info">5门课程待审核</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary btn-sm">审核</button>
+                    </div>
+                </div>
+                
+                <div class="task-item">
+                    <div class="task-icon">⚠️</div>
+                    <div class="task-content">
+                        <div class="task-title">系统告警</div>
+                        <div class="task-info">3个系统告警需要处理</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-warning btn-sm">查看</button>
+                    </div>
+                </div>
+                
+                <div class="task-item">
+                    <div class="task-icon">📊</div>
+                    <div class="task-content">
+                        <div class="task-title">数据备份</div>
+                        <div class="task-info">本周数据备份任务</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-secondary btn-sm">备份</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">平台使用统计</h3>
+            <div class="chart-placeholder">
+                📈 平台使用统计图表
+                <br>
+                <small>(实际项目中可集成Chart.js等图表库)</small>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 这里可以添加一些交互功能
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟加载动画
+            document.querySelectorAll('.stat-number').forEach(stat => {
+                const finalValue = stat.textContent;
+                stat.textContent = '0';
+                
+                setTimeout(() => {
+                    let current = 0;
+                    const increment = parseInt(finalValue.replace(',', '')) / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= parseInt(finalValue.replace(',', ''))) {
+                            stat.textContent = finalValue;
+                            clearInterval(timer);
+                        } else {
+                            stat.textContent = Math.floor(current).toLocaleString();
+                        }
+                    }, 30);
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>

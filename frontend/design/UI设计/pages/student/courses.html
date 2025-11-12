@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的课程 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+        
+        .search-input {
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-md);
+            width: 300px;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            background: var(--card-background);
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .filter-tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: var(--spacing-lg);
+        }
+        
+        .course-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .course-header {
+            padding: var(--spacing-lg);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        
+        .course-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .course-teacher {
+            opacity: 0.9;
+            font-size: var(--font-size-sm);
+        }
+        
+        .course-content {
+            padding: var(--spacing-lg);
+        }
+        
+        .course-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .course-progress {
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--background-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .course-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .course-actions .btn {
+            flex: 1;
+        }
+        
+        .course-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .course-status {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 20px;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+        
+        .status-ongoing {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-color);
+        }
+        
+        .status-completed {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .status-not-started {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html" class="active">📚 我的课程</a></li>
+            <li><a href="assignments.html">📝 作业</a></li>
+            <li><a href="grades.html">📊 成绩</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">我的课程</h1>
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="搜索课程...">
+                    <button class="btn btn-primary">搜索</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterCourses('all')">全部课程</button>
+            <button class="filter-tab" onclick="filterCourses('ongoing')">进行中</button>
+            <button class="filter-tab" onclick="filterCourses('completed')">已完成</button>
+            <button class="filter-tab" onclick="filterCourses('not-started')">未开始</button>
+        </div>
+
+        <div class="course-grid" id="course-grid">
+            <!-- 课程卡片将通过JavaScript动态生成 -->
+        </div>
+    </main>
+
+    <script>
+        // 模拟课程数据
+        const courses = [
+            {
+                id: 1,
+                title: '数据结构与算法',
+                teacher: '李教授',
+                progress: 75,
+                status: 'ongoing',
+                chapters: 12,
+                completed: 9,
+                lastAccess: '2024-01-15'
+            },
+            {
+                id: 2,
+                title: 'Web前端开发',
+                teacher: '王老师',
+                progress: 45,
+                status: 'ongoing',
+                chapters: 15,
+                completed: 7,
+                lastAccess: '2024-01-14'
+            },
+            {
+                id: 3,
+                title: '数据库原理',
+                teacher: '陈教授',
+                progress: 100,
+                status: 'completed',
+                chapters: 10,
+                completed: 10,
+                lastAccess: '2024-01-10'
+            },
+            {
+                id: 4,
+                title: '操作系统',
+                teacher: '赵教授',
+                progress: 0,
+                status: 'not-started',
+                chapters: 8,
+                completed: 0,
+                lastAccess: '未开始'
+            },
+            {
+                id: 5,
+                title: '计算机网络',
+                teacher: '孙老师',
+                progress: 30,
+                status: 'ongoing',
+                chapters: 14,
+                completed: 4,
+                lastAccess: '2024-01-12'
+            },
+            {
+                id: 6,
+                title: '软件工程',
+                teacher: '周教授',
+                progress: 100,
+                status: 'completed',
+                chapters: 12,
+                completed: 12,
+                lastAccess: '2024-01-08'
+            }
+        ];
+
+        function renderCourses(filter = 'all') {
+            const courseGrid = document.getElementById('course-grid');
+            let filteredCourses = courses;
+
+            if (filter !== 'all') {
+                filteredCourses = courses.filter(course => course.status === filter);
+            }
+
+            courseGrid.innerHTML = filteredCourses.map(course => `
+                <div class="course-card" data-status="${course.status}">
+                    <div class="course-header">
+                        <h3 class="course-title">${course.title}</h3>
+                        <p class="course-teacher">教师：${course.teacher}</p>
+                    </div>
+                    <div class="course-content">
+                        <div class="course-meta">
+                            <span>最后访问：${course.lastAccess}</span>
+                            <span class="course-status status-${course.status}">
+                                ${course.status === 'ongoing' ? '进行中' : 
+                                  course.status === 'completed' ? '已完成' : '未开始'}
+                            </span>
+                        </div>
+                        
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">${course.chapters}</div>
+                                <div class="stat-label">总章节</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${course.completed}</div>
+                                <div class="stat-label">已完成</div>
+                            </div>
+                        </div>
+                        
+                        <div class="course-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${course.progress}%"></div>
+                            </div>
+                            <div class="progress-text">学习进度：${course.progress}%</div>
+                        </div>
+                        
+                        <div class="course-actions">
+                            <a href="course-detail.html?id=${course.id}" class="btn btn-primary">
+                                ${course.status === 'not-started' ? '开始学习' : '继续学习'}
+                            </a>
+                            <a href="course-discussion.html?id=${course.id}" class="btn btn-secondary">
+                                讨论区
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterCourses(filter) {
+            // 更新标签状态
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 渲染课程
+            renderCourses(filter);
+        }
+
+        // 搜索功能
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const courseCards = document.querySelectorAll('.course-card');
+            
+            courseCards.forEach(card => {
+                const title = card.querySelector('.course-title').textContent.toLowerCase();
+                const teacher = card.querySelector('.course-teacher').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || teacher.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCourses('all');
+        });
+    </script>
+</body>
+</html>

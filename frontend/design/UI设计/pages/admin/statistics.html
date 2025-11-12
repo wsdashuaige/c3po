@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据统计 - 管理后台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: var(--card-background); border-right: 1px solid var(--border-color); padding: var(--spacing-lg); overflow-y: auto; z-index: 1000; }
+        .sidebar-brand { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xl); text-align: center; }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: var(--spacing-sm); }
+        .sidebar-nav a { display: flex; align-items: center; padding: var(--spacing-md); color: var(--text-secondary); text-decoration: none; border-radius: var(--border-radius); transition: all 0.2s ease; gap: var(--spacing-md); }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .main-content { margin-left: 250px; padding: var(--spacing-lg); min-height: 100vh; }
+        .header { background: var(--card-background); padding: var(--spacing-lg); border-radius: var(--border-radius); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-light); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--spacing-lg); }
+        .kpi { text-align: center; }
+        .kpi .value { font-size: var(--font-size-3xl); font-weight: 700; color: var(--secondary-color); }
+        .kpi .label { color: var(--text-secondary); }
+        .chart { background: var(--card-background); border-radius: var(--border-radius); padding: var(--spacing-lg); box-shadow: var(--shadow-light); }
+        .chart .title { font-weight: 600; margin-bottom: var(--spacing-md); }
+        .chart .placeholder { height: 280px; border: 2px dashed var(--border-color); border-radius: var(--border-radius); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+        .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--spacing-md); }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="users.html">👥 用户管理</a></li>
+            <li><a href="courses.html">📚 课程审核</a></li>
+            <li><a href="statistics.html" class="active">📊 数据统计</a></li>
+            <li><a href="settings.html">⚙️ 系统设置</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-content">
+                <h1>数据统计</h1>
+                <div class="filters">
+                    <select class="form-input form-select">
+                        <option>最近7天</option>
+                        <option>最近30天</option>
+                        <option>最近90天</option>
+                    </select>
+                    <select class="form-input form-select">
+                        <option>全部模块</option>
+                        <option>用户</option>
+                        <option>课程</option>
+                        <option>作业</option>
+                    </select>
+                    <button class="btn btn-primary">应用</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="grid-3">
+            <div class="card kpi">
+                <div class="value">2,456</div>
+                <div class="label">活跃用户</div>
+            </div>
+            <div class="card kpi">
+                <div class="value">89</div>
+                <div class="label">新增课程</div>
+            </div>
+            <div class="card kpi">
+                <div class="value">1,203</div>
+                <div class="label">提交作业</div>
+            </div>
+        </section>
+
+        <section class="grid" style="grid-template-columns: 2fr 1fr; margin-top: var(--spacing-xl); gap: var(--spacing-lg);">
+            <div class="chart">
+                <div class="title">用户增长趋势</div>
+                <div class="placeholder">折线图占位</div>
+            </div>
+            <div class="chart">
+                <div class="title">用户角色占比</div>
+                <div class="placeholder">饼图占位</div>
+            </div>
+        </section>
+
+        <section class="grid" style="grid-template-columns: 1fr 1fr; margin-top: var(--spacing-lg); gap: var(--spacing-lg);">
+            <div class="chart">
+                <div class="title">课程访问量 TOP10</div>
+                <div class="placeholder">柱状图占位</div>
+            </div>
+            <div class="chart">
+                <div class="title">作业提交趋势</div>
+                <div class="placeholder">折线图占位</div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
+

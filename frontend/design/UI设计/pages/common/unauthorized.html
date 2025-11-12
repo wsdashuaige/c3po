@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>访问受限 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, var(--warning-color) 0%, var(--danger-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: var(--spacing-xl);
+            background: var(--card-background);
+            border-radius: var(--border-radius-large);
+            box-shadow: var(--shadow-heavy);
+        }
+        
+        .error-code {
+            font-size: 6rem;
+            font-weight: 700;
+            color: var(--warning-color);
+            margin-bottom: var(--spacing-lg);
+            line-height: 1;
+        }
+        
+        .error-title {
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .error-description {
+            font-size: var(--font-size-lg);
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-xl);
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .error-illustration {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto var(--spacing-xl);
+            background: linear-gradient(135deg, var(--warning-color), var(--danger-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            color: white;
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .security-notice {
+            background: rgba(255, 149, 0, 0.1);
+            border: 1px solid rgba(255, 149, 0, 0.2);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+            text-align: left;
+        }
+        
+        .security-notice h3 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--warning-color);
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .security-notice ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .security-notice li {
+            padding: var(--spacing-sm) 0;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .security-notice li::before {
+            content: '•';
+            color: var(--warning-color);
+            font-weight: bold;
+        }
+        
+        .role-info {
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-top: var(--spacing-lg);
+        }
+        
+        .role-info h4 {
+            font-size: var(--font-size-md);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-md);
+            text-align: center;
+        }
+        
+        .role-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--spacing-md);
+        }
+        
+        .role-button {
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: var(--card-background);
+            color: var(--text-secondary);
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .role-button:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+        
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 4rem;
+            }
+            
+            .error-title {
+                font-size: var(--font-size-xl);
+            }
+            
+            .error-description {
+                font-size: var(--font-size-md);
+            }
+            
+            .error-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .error-actions .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .error-illustration {
+                width: 150px;
+                height: 150px;
+                font-size: 60px;
+            }
+            
+            .role-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-illustration">🚫</div>
+        
+        <div class="error-code">403</div>
+        
+        <h1 class="error-title">访问受限</h1>
+        
+        <p class="error-description">
+            抱歉，您没有权限访问此页面。<br>
+            请确认您的身份或联系管理员获取相应权限。
+        </p>
+        
+        <div class="error-actions">
+            <a href="../../index.html" class="btn btn-primary">返回首页</a>
+            <button class="btn btn-secondary" onclick="history.back()">返回上页</button>
+        </div>
+        
+        <div class="security-notice">
+            <h3>⚠️ 安全提醒</h3>
+            <ul>
+                <li>此页面需要特定的访问权限</li>
+                <li>请使用正确的身份登录系统</li>
+                <li>如果您认为这是错误，请联系系统管理员</li>
+                <li>请不要尝试绕过权限限制</li>
+            </ul>
+        </div>
+        
+        <div class="role-info">
+            <h4>选择您的身份重新登录：</h4>
+            <div class="role-buttons">
+                <a href="../student/login.html" class="role-button">
+                    👨‍🎓<br>学生登录
+                </a>
+                <a href="../teacher/login.html" class="role-button">
+                    👨‍🏫<br>教师登录
+                </a>
+                <a href="../admin/login.html" class="role-button">
+                    👨‍💼<br>管理员登录
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 添加一些交互效果
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加页面加载动画
+            const container = document.querySelector('.error-container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // 添加警告动画
+            const warningIcon = document.querySelector('.error-illustration');
+            let isShaking = false;
+            
+            function shakeWarning() {
+                if (!isShaking) {
+                    isShaking = true;
+                    warningIcon.style.animation = 'shake 0.5s ease-in-out';
+                    setTimeout(() => {
+                        warningIcon.style.animation = '';
+                        isShaking = false;
+                    }, 500);
+                }
+            }
+            
+            // 每3秒震动一次警告图标
+            setInterval(shakeWarning, 3000);
+        });
+        
+        // 添加震动动画CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

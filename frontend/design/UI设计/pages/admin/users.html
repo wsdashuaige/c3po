@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .search-bar {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+        
+        .search-input {
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-md);
+            width: 300px;
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            background: var(--card-background);
+            padding: var(--spacing-sm);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .filter-tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .filter-tab.active {
+            background: var(--danger-color);
+            color: white;
+        }
+        
+        .users-table-container {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .users-table th,
+        .users-table td {
+            padding: var(--spacing-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .users-table th {
+            background: var(--background-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .users-table td {
+            color: var(--text-secondary);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: var(--font-size-sm);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .user-details h4 {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .user-details p {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .status-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 20px;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-color);
+        }
+        
+        .status-pending {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .status-suspended {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .role-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 20px;
+            font-size: var(--font-size-xs);
+            font-weight: 500;
+        }
+        
+        .role-student {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .role-teacher {
+            background: rgba(88, 86, 214, 0.1);
+            color: var(--secondary-color);
+        }
+        
+        .role-admin {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-xl);
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: var(--font-size-xl);
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: var(--spacing-sm);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            justify-content: flex-end;
+            margin-top: var(--spacing-xl);
+        }
+
+        /* 审核用户弹层 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--card-background); border-radius: var(--border-radius); padding: var(--spacing-xl); width: 90%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: var(--spacing-lg); padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
+        .modal-title { font-size: var(--font-size-lg); font-weight: 600; color: var(--text-primary); }
+        .modal-close { background:none; border:none; font-size: var(--font-size-xl); color: var(--text-secondary); cursor:pointer; padding: var(--spacing-sm); }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="users.html" class="active">👥 用户管理</a></li>
+            <li><a href="courses.html">📚 课程审核</a></li>
+            <li><a href="statistics.html">📊 数据统计</a></li>
+            <li><a href="settings.html">⚙️ 系统设置</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">用户管理</h1>
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="搜索用户...">
+                    <button class="btn btn-primary">搜索</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterUsers('all')">全部用户</button>
+            <button class="filter-tab" onclick="filterUsers('pending')">待审核</button>
+            <button class="filter-tab" onclick="filterUsers('active')">已激活</button>
+            <button class="filter-tab" onclick="filterUsers('suspended')">已禁用</button>
+        </div>
+
+        <div class="users-table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>用户信息</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>注册时间</th>
+                        <th>最后登录</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="users-tbody">
+                    <!-- 用户数据将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- 审核用户模态框 -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">审核用户</h2>
+                <button class="modal-close" onclick="closeModal('reviewModal')">&times;</button>
+            </div>
+            <div id="review-user-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">姓名</label>
+                        <input id="reviewName" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">邮箱</label>
+                        <input id="reviewEmail" class="form-input" readonly>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">角色</label>
+                        <input id="reviewRole" class="form-input" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">注册时间</label>
+                        <input id="reviewRegisterTime" class="form-input" readonly>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">审核意见（可选）</label>
+                    <textarea class="form-input form-textarea" placeholder="填写审核意见..."></textarea>
+                </div>
+                <div class="text-right">
+                    <button class="btn btn-secondary" onclick="closeModal('reviewModal')">取消</button>
+                    <button class="btn btn-danger">驳回</button>
+                    <button class="btn btn-primary">通过</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 用户详情模态框 -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">用户详情</h2>
+                <button class="modal-close" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            
+            <div id="user-details">
+                <!-- 用户详情将通过JavaScript动态生成 -->
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('userModal')">关闭</button>
+                <button type="button" class="btn btn-warning" onclick="toggleUserStatus()">切换状态</button>
+                <button type="button" class="btn btn-danger" onclick="deleteUser()">删除用户</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟用户数据
+        const users = [
+            {
+                id: 1,
+                name: '张三',
+                email: 'zhangsan@student.edu.cn',
+                role: 'student',
+                status: 'active',
+                studentId: '202201001',
+                major: '计算机科学与技术',
+                registerTime: '2024-01-10',
+                lastLogin: '2024-01-15 14:30'
+            },
+            {
+                id: 2,
+                name: '李四',
+                email: 'lisi@student.edu.cn',
+                role: 'student',
+                status: 'pending',
+                studentId: '202201002',
+                major: '软件工程',
+                registerTime: '2024-01-14',
+                lastLogin: '未登录'
+            },
+            {
+                id: 3,
+                name: '王教授',
+                email: 'wang@teacher.edu.cn',
+                role: 'teacher',
+                status: 'active',
+                employeeId: 'T2023001',
+                department: '计算机学院',
+                registerTime: '2024-01-08',
+                lastLogin: '2024-01-15 16:20'
+            },
+            {
+                id: 4,
+                name: '赵同学',
+                email: 'zhao@student.edu.cn',
+                role: 'student',
+                status: 'suspended',
+                studentId: '202201003',
+                major: '网络工程',
+                registerTime: '2024-01-12',
+                lastLogin: '2024-01-13 10:15'
+            },
+            {
+                id: 5,
+                name: '陈老师',
+                email: 'chen@teacher.edu.cn',
+                role: 'teacher',
+                status: 'pending',
+                employeeId: 'T2023002',
+                department: '信息工程学院',
+                registerTime: '2024-01-15',
+                lastLogin: '未登录'
+            }
+        ];
+
+        function getRoleText(role) {
+            const roleMap = {
+                'student': '学生',
+                'teacher': '教师',
+                'admin': '管理员'
+            };
+            return roleMap[role] || role;
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'active': '已激活',
+                'pending': '待审核',
+                'suspended': '已禁用'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatDate(dateString) {
+            if (dateString === '未登录') return dateString;
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        function renderUsers(filter = 'all') {
+            const tbody = document.getElementById('users-tbody');
+            let filteredUsers = users;
+
+            if (filter !== 'all') {
+                filteredUsers = users.filter(user => user.status === filter);
+            }
+
+            tbody.innerHTML = filteredUsers.map(user => `
+                <tr>
+                    <td>
+                        <div class="user-info">
+                            <div class="user-avatar">${user.name.charAt(0)}</div>
+                            <div class="user-details">
+                                <h4>${user.name}</h4>
+                                <p>${user.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="role-badge role-${user.role}">
+                            ${getRoleText(user.role)}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="status-badge status-${user.status}">
+                            ${getStatusText(user.status)}
+                        </span>
+                    </td>
+                    <td>${formatDate(user.registerTime)}</td>
+                    <td>${user.lastLogin}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary btn-sm" onclick="viewUser(${user.id})">查看</button>
+                            <button class="btn btn-primary btn-sm" onclick="editUser(${user.id})">编辑</button>
+                            ${user.status === 'pending' ? `
+                                <button class=\"btn btn-primary btn-sm\" onclick=\"openReviewModal(${user.id})\">审核</button>
+                            ` : `
+                                <button class=\"btn btn-warning btn-sm\" onclick=\"toggleUserStatus(${user.id})\">${user.status === 'active' ? '禁用' : '激活'}</button>
+                            `}
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterUsers(filter) {
+            // 更新标签状态
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 渲染用户
+            renderUsers(filter);
+        }
+
+        function viewUser(userId) {
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                const userDetails = document.getElementById('user-details');
+                userDetails.innerHTML = `
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">姓名</label>
+                            <input type="text" class="form-input" value="${user.name}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">邮箱</label>
+                            <input type="email" class="form-input" value="${user.email}" readonly>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">角色</label>
+                            <input type="text" class="form-input" value="${getRoleText(user.role)}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">状态</label>
+                            <input type="text" class="form-input" value="${getStatusText(user.status)}" readonly>
+                        </div>
+                    </div>
+                    
+                    ${user.role === 'student' ? `
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">学号</label>
+                                <input type="text" class="form-input" value="${user.studentId}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">专业</label>
+                                <input type="text" class="form-input" value="${user.major}" readonly>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">工号</label>
+                                <input type="text" class="form-input" value="${user.employeeId}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">部门</label>
+                                <input type="text" class="form-input" value="${user.department}" readonly>
+                            </div>
+                        </div>
+                    `}
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">注册时间</label>
+                            <input type="text" class="form-input" value="${formatDate(user.registerTime)}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">最后登录</label>
+                            <input type="text" class="form-input" value="${user.lastLogin}" readonly>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('userModal').classList.add('active');
+            }
+        }
+
+        function editUser(userId) {
+            alert(`编辑用户 ${userId} - 实际项目中会打开编辑表单`);
+        }
+
+        function openReviewModal(userId){
+            const user = users.find(u => u.id === userId);
+            if(!user) return;
+            document.getElementById('reviewName').value = user.name;
+            document.getElementById('reviewEmail').value = user.email;
+            document.getElementById('reviewRole').value = getRoleText(user.role);
+            document.getElementById('reviewRegisterTime').value = formatDate(user.registerTime);
+            document.getElementById('reviewModal').classList.add('active');
+        }
+
+        function toggleUserStatus(userId) {
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                user.status = user.status === 'active' ? 'suspended' : 'active';
+                renderUsers(document.querySelector('.filter-tab.active').textContent);
+                alert(`用户状态已更新为：${getStatusText(user.status)}`);
+            }
+        }
+
+        function deleteUser(userId) {
+            if (confirm('确定要删除这个用户吗？此操作不可恢复。')) {
+                const index = users.findIndex(u => u.id === userId);
+                if (index > -1) {
+                    users.splice(index, 1);
+                    renderUsers(document.querySelector('.filter-tab.active').textContent);
+                    alert('用户已删除');
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // 搜索功能
+        document.querySelector('.search-input').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('#users-tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderUsers('all');
+        });
+    </script>
+</body>
+</html>

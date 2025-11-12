@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 管理后台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: var(--card-background); border-right: 1px solid var(--border-color); padding: var(--spacing-lg); overflow-y: auto; z-index: 1000; }
+        .sidebar-brand { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xl); text-align: center; }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: var(--spacing-sm); }
+        .sidebar-nav a { display: flex; align-items: center; padding: var(--spacing-md); color: var(--text-secondary); text-decoration: none; border-radius: var(--border-radius); transition: all 0.2s ease; gap: var(--spacing-md); }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .main-content { margin-left: 250px; padding: var(--spacing-lg); min-height: 100vh; }
+        .profile-header { display: flex; align-items: center; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg); }
+        .avatar { width: 72px; height: 72px; border-radius: 50%; background: var(--danger-color); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--font-size-xl); }
+        .info { color: var(--text-secondary); }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--spacing-lg); }
+        .form-row { display: grid; grid-template-columns: 120px 1fr; gap: var(--spacing-md); align-items: center; margin-bottom: var(--spacing-md); }
+        .actions { display: flex; gap: var(--spacing-sm); justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="users.html">👥 用户管理</a></li>
+            <li><a href="courses.html">📚 课程审核</a></li>
+            <li><a href="statistics.html">📊 数据统计</a></li>
+            <li><a href="settings.html">⚙️ 系统设置</a></li>
+            <li><a href="profile.html" class="active">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="card">
+            <div class="profile-header">
+                <div class="avatar">管</div>
+                <div>
+                    <div style="font-weight:600;">系统管理员</div>
+                    <div class="info">admin@example.com • 上次登录：今天 10:12</div>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">基本信息</div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">姓名</label>
+                        <input class="form-input" value="系统管理员">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">邮箱</label>
+                        <input class="form-input" value="admin@example.com">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">手机号</label>
+                        <input class="form-input" placeholder="请输入手机号">
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary">重置</button>
+                        <button class="btn btn-primary">保存</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">修改密码</div>
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">当前密码</label>
+                        <input type="password" class="form-input" placeholder="当前密码">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">新密码</label>
+                        <input type="password" class="form-input" placeholder="新密码">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">确认新密码</label>
+                        <input type="password" class="form-input" placeholder="确认新密码">
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary">取消</button>
+                        <button class="btn btn-primary">更新密码</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
+

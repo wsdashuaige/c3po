@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程详情 - 教师端</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar { position: fixed; left: 0; top: 0; width: 250px; height: 100vh; background: var(--card-background); border-right: 1px solid var(--border-color); padding: var(--spacing-lg); overflow-y: auto; z-index: 1000; }
+        .sidebar-brand { font-size: var(--font-size-lg); font-weight: 700; color: var(--text-primary); margin-bottom: var(--spacing-xl); text-align: center; }
+        .sidebar-nav { list-style: none; }
+        .sidebar-nav li { margin-bottom: var(--spacing-sm); }
+        .sidebar-nav a { display: flex; align-items: center; padding: var(--spacing-md); color: var(--text-secondary); text-decoration: none; border-radius: var(--border-radius); transition: all 0.2s ease; gap: var(--spacing-md); }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(0, 122, 255, 0.1); color: var(--primary-color); }
+        .main-content { margin-left: 250px; padding: var(--spacing-lg); min-height: 100vh; }
+        .header { background: var(--card-background); padding: var(--spacing-lg); border-radius: var(--border-radius); margin-bottom: var(--spacing-lg); box-shadow: var(--shadow-light); }
+        .header-actions { display: flex; gap: var(--spacing-sm); }
+        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--spacing-lg); }
+        .list { list-style: none; }
+        .list li { padding: var(--spacing-md) 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html" class="active">📚 课程管理</a></li>
+            <li><a href="assignments.html">📝 作业管理</a></li>
+            <li><a href="grades.html">📊 成绩管理</a></li>
+            <li><a href="students.html">👥 学生管理</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <section class="header">
+            <div style="display:flex; justify-content: space-between; align-items:center;">
+                <div>
+                    <h1 style="margin-bottom: 6px;">数据结构与算法</h1>
+                    <div class="text-muted">春季学期 • 学生 45 • 章节 12</div>
+                </div>
+                <div class="header-actions">
+                    <a class="btn btn-secondary" href="assignments.html">布置作业</a>
+                    <a class="btn btn-primary" href="grades.html">录入成绩</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">课程章节</div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm">新增章节</button>
+                    </div>
+                </div>
+                <ul class="list">
+                    <li>
+                        <div>
+                            <div style="font-weight:600;">第1章 复杂度分析</div>
+                            <div class="text-muted">已发布 • 3个小节</div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary btn-sm">编辑</button>
+                            <button class="btn btn-primary btn-sm">发布</button>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <div style="font-weight:600;">第2章 线性表</div>
+                            <div class="text-muted">草稿 • 2个小节</div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary btn-sm">编辑</button>
+                            <button class="btn btn-primary btn-sm">发布</button>
+                        </div>
+                    </li>
+                    <li>
+                        <div>
+                            <div style="font-weight:600;">第3章 栈与队列</div>
+                            <div class="text-muted">已发布 • 4个小节</div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary btn-sm">编辑</button>
+                            <button class="btn btn-primary btn-sm">发布</button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">通知与活动</div>
+                </div>
+                <ul class="list">
+                    <li>
+                        <div>
+                            <div style="font-weight:600;">作业1 已发布</div>
+                            <div class="text-muted">截止：3月20日</div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm">查看</button>
+                    </li>
+                    <li>
+                        <div>
+                            <div style="font-weight:600;">第2章 线性表 草稿待发布</div>
+                            <div class="text-muted">建议本周完成</div>
+                        </div>
+                        <button class="btn btn-primary btn-sm">去发布</button>
+                    </li>
+                    <li>
+                        <div>
+                            <div style="font-weight:600;">期中考试 成绩录入中</div>
+                            <div class="text-muted">已录入 12/45</div>
+                        </div>
+                        <a class="btn btn-primary btn-sm" href="grades.html">继续录入</a>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+</body>
+</html>
+
+

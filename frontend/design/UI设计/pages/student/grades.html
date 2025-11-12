@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的成绩 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .grade-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .summary-card {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            text-align: center;
+        }
+        
+        .summary-number {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .summary-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .summary-number.average { color: var(--primary-color); }
+        .summary-number.highest { color: var(--success-color); }
+        .summary-number.lowest { color: var(--warning-color); }
+        .summary-number.rank { color: var(--secondary-color); }
+        
+        .course-selector {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .course-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+        
+        .course-tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            border: 1px solid var(--border-color);
+            background: var(--background-color);
+            color: var(--text-secondary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .course-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .grades-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: var(--spacing-lg);
+        }
+        
+        .grades-table-container {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+        }
+        
+        .grades-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .grades-table th,
+        .grades-table td {
+            padding: var(--spacing-md);
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .grades-table th {
+            background: var(--background-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .grades-table td {
+            color: var(--text-secondary);
+        }
+        
+        .grade-score {
+            font-weight: 600;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--spacing-xs);
+            text-align: center;
+        }
+        
+        .grade-excellent {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-color);
+        }
+        
+        .grade-good {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .grade-average {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .grade-poor {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .grade-chart-container {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            padding: var(--spacing-lg);
+        }
+        
+        .chart-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+            text-align: center;
+        }
+        
+        .chart-placeholder {
+            height: 300px;
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            border: 2px dashed var(--border-color);
+        }
+        
+        .grade-trend {
+            margin-top: var(--spacing-lg);
+        }
+        
+        .trend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .trend-item:last-child {
+            border-bottom: none;
+        }
+        
+        .trend-course {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .trend-score {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .export-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            justify-content: flex-end;
+            margin-bottom: var(--spacing-lg);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html">🏠 首页</a></li>
+            <li><a href="courses.html">📚 我的课程</a></li>
+            <li><a href="assignments.html">📝 作业</a></li>
+            <li><a href="grades.html" class="active">📊 成绩</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">我的成绩</h1>
+                <div class="export-actions">
+                    <button class="btn btn-secondary">导出成绩单</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="grade-summary">
+            <div class="summary-card">
+                <div class="summary-number average">87.5</div>
+                <div class="summary-label">平均成绩</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number highest">96</div>
+                <div class="summary-label">最高成绩</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number lowest">78</div>
+                <div class="summary-label">最低成绩</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-number rank">15/120</div>
+                <div class="summary-label">班级排名</div>
+            </div>
+        </div>
+
+        <div class="course-selector">
+            <div class="course-tabs">
+                <button class="course-tab active" onclick="showCourseGrades('all')">全部课程</button>
+                <button class="course-tab" onclick="showCourseGrades('ds')">数据结构与算法</button>
+                <button class="course-tab" onclick="showCourseGrades('web')">Web前端开发</button>
+                <button class="course-tab" onclick="showCourseGrades('db')">数据库原理</button>
+                <button class="course-tab" onclick="showCourseGrades('os')">操作系统</button>
+            </div>
+        </div>
+
+        <div class="grades-content">
+            <div class="grades-table-container">
+                <table class="grades-table" id="grades-table">
+                    <thead>
+                        <tr>
+                            <th>作业/考试</th>
+                            <th>类型</th>
+                            <th>成绩</th>
+                            <th>满分</th>
+                            <th>提交时间</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grades-tbody">
+                        <!-- 成绩数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grade-chart-container">
+                <h3 class="chart-title">成绩趋势</h3>
+                <div class="chart-placeholder">
+                    📈 成绩趋势图
+                    <br>
+                    <small>(实际项目中可集成Chart.js等图表库)</small>
+                </div>
+                
+                <div class="grade-trend">
+                    <div class="trend-item">
+                        <span class="trend-course">数据结构与算法</span>
+                        <span class="trend-score">92分</span>
+                    </div>
+                    <div class="trend-item">
+                        <span class="trend-course">Web前端开发</span>
+                        <span class="trend-score">88分</span>
+                    </div>
+                    <div class="trend-item">
+                        <span class="trend-course">数据库原理</span>
+                        <span class="trend-score">85分</span>
+                    </div>
+                    <div class="trend-item">
+                        <span class="trend-course">操作系统</span>
+                        <span class="trend-score">78分</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 模拟成绩数据
+        const gradesData = {
+            all: [
+                { course: '数据结构与算法', assignment: '链表操作实验', type: '实验', score: 92, fullScore: 100, submitTime: '2024-01-15', status: '已批改' },
+                { course: 'Web前端开发', assignment: '个人博客项目', type: '项目', score: 88, fullScore: 100, submitTime: '2024-01-12', status: '已批改' },
+                { course: '数据库原理', assignment: '数据库设计', type: '作业', score: 85, fullScore: 100, submitTime: '2024-01-10', status: '已批改' },
+                { course: '操作系统', assignment: '进程调度实验', type: '实验', score: 78, fullScore: 100, submitTime: '2024-01-08', status: '已批改' },
+                { course: '数据结构与算法', assignment: '算法分析报告', type: '报告', score: 90, fullScore: 100, submitTime: '2024-01-05', status: '已批改' },
+                { course: 'Web前端开发', assignment: '响应式布局练习', type: '作业', score: 86, fullScore: 100, submitTime: '2024-01-03', status: '已批改' }
+            ],
+            ds: [
+                { course: '数据结构与算法', assignment: '链表操作实验', type: '实验', score: 92, fullScore: 100, submitTime: '2024-01-15', status: '已批改' },
+                { course: '数据结构与算法', assignment: '算法分析报告', type: '报告', score: 90, fullScore: 100, submitTime: '2024-01-05', status: '已批改' },
+                { course: '数据结构与算法', assignment: '期中考试', type: '考试', score: 89, fullScore: 100, submitTime: '2023-12-20', status: '已批改' }
+            ],
+            web: [
+                { course: 'Web前端开发', assignment: '个人博客项目', type: '项目', score: 88, fullScore: 100, submitTime: '2024-01-12', status: '已批改' },
+                { course: 'Web前端开发', assignment: '响应式布局练习', type: '作业', score: 86, fullScore: 100, submitTime: '2024-01-03', status: '已批改' },
+                { course: 'Web前端开发', assignment: 'JavaScript基础练习', type: '作业', score: 92, fullScore: 100, submitTime: '2023-12-28', status: '已批改' }
+            ],
+            db: [
+                { course: '数据库原理', assignment: '数据库设计', type: '作业', score: 85, fullScore: 100, submitTime: '2024-01-10', status: '已批改' },
+                { course: '数据库原理', assignment: 'SQL查询练习', type: '作业', score: 88, fullScore: 100, submitTime: '2023-12-25', status: '已批改' }
+            ],
+            os: [
+                { course: '操作系统', assignment: '进程调度实验', type: '实验', score: 78, fullScore: 100, submitTime: '2024-01-08', status: '已批改' },
+                { course: '操作系统', assignment: '内存管理作业', type: '作业', score: 82, fullScore: 100, submitTime: '2023-12-22', status: '已批改' }
+            ]
+        };
+
+        function getGradeClass(score) {
+            if (score >= 90) return 'grade-excellent';
+            if (score >= 80) return 'grade-good';
+            if (score >= 70) return 'grade-average';
+            return 'grade-poor';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        function renderGrades(course = 'all') {
+            const tbody = document.getElementById('grades-tbody');
+            const grades = gradesData[course] || gradesData.all;
+            
+            tbody.innerHTML = grades.map(grade => `
+                <tr>
+                    <td>
+                        <div style="font-weight: 500; color: var(--text-primary);">${grade.assignment}</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--text-secondary);">${grade.course}</div>
+                    </td>
+                    <td>
+                        <span class="status-badge ${grade.type === '实验' ? 'info' : grade.type === '项目' ? 'success' : 'warning'}">
+                            ${grade.type}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="grade-score ${getGradeClass(grade.score)}">
+                            ${grade.score}
+                        </span>
+                    </td>
+                    <td>${grade.fullScore}</td>
+                    <td>${formatDate(grade.submitTime)}</td>
+                    <td>
+                        <span class="status-badge success">${grade.status}</span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function showCourseGrades(course) {
+            // 更新标签状态
+            document.querySelectorAll('.course-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 渲染成绩
+            renderGrades(course);
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            renderGrades('all');
+        });
+    </script>
+</body>
+</html>

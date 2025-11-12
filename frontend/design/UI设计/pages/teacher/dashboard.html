@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师首页 - 智慧学习平台</title>
+    <link rel="stylesheet" href="../../css/common.css">
+    <style>
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: all 0.2s ease;
+            gap: var(--spacing-md);
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: var(--spacing-lg);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .welcome-text {
+            font-size: var(--font-size-xl);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .stat-card {
+            background: var(--card-background);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-2xl);
+            font-weight: 700;
+            color: var(--secondary-color);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: var(--font-size-sm);
+        }
+        
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .course-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .course-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .course-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .course-header {
+            padding: var(--spacing-lg);
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: white;
+        }
+        
+        .course-title {
+            font-size: var(--font-size-lg);
+            font-weight:  Felix
+        }
+        
+        .course-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+        
+        .course-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            padding: 0 var(--spacing-lg) var(--spacing-lg);
+        }
+        
+        .course-actions .btn {
+            flex: 1;
+        }
+        
+        .pending-tasks {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: var(--spacing-md);
+        }
+        
+        .task-item:last-child {
+            border-bottom: none;
+        }
+        
+        .task-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 149, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--warning-color);
+        }
+        
+        .task-content {
+            flex: 1;
+        }
+        
+        .task-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .task-info {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-brand">智慧学习平台</div>
+        <ul class="sidebar-nav">
+            <li><a href="dashboard.html" class="active">🏠 首页</a></li>
+            <li><a href="courses.html">📚 课程管理</a></li>
+            <li><a href="assignments.html">📝 作业管理</a></li>
+            <li><a href="grades.html">📊 成绩管理</a></li>
+            <li><a href="students.html">👥 学生管理</a></li>
+            <li><a href="profile.html">👤 个人中心</a></li>
+            <li><a href="../../index.html">🚪 退出登录</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="welcome-text">欢迎回来，李教授！</h1>
+                <div class="user-info">
+                    <div class="user-avatar">李</div>
+                    <span>李教授</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">8</div>
+                <div class="stat-label">开设课程</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">156</div>
+                <div class="stat-label">学生总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">23</div>
+                <div class="stat-label">待批改作业</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">87.5</div>
+                <div class="stat-label">平均成绩</div>
+            </div>
+        </div>
+
+        <section>
+            <h2 class="section-title">我的课程</h2>
+            <div class="course-grid">
+                <div class="course-card">
+                    <div class="course-header">
+                        <h3 class="course-title">数据结构与算法</h3>
+                        <p style="opacity: 0.9; font-size: var(--font-size-sm);">春季学期</p>
+                    </div>
+                    <div style="padding: var(--spacing-lg);">
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">45</div>
+                                <div class="stat-label">学生数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">12</div>
+                                <div class="stat-label">章节数</div>
+                            </div>
+                        </div>
+                        <div class="course-actions">
+                            <a href="course-detail.html" class="btn btn-primary">管理课程</a>
+                            <a href="assignments.html" class="btn btn-secondary">布置作业</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <div class="course-header">
+                        <h3 class="course-title">算法设计与分析</h3>
+                        <p style="opacity: 0.9; font-size: var(--font-size-sm);">秋季学期</p>
+                    </div>
+                    <div style="padding: var(--spacing-lg);">
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">32</div>
+                                <div class="stat-label">学生数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">10</div>
+                                <div class="stat-label">章节数</div>
+                            </div>
+                        </div>
+                        <div class="course-actions">
+                            <a href="course-detail.html" class="btn btn-primary">管理课程</a>
+                            <a href="assignments.html" class="btn btn-secondary">布置作业</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="course-card">
+                    <div class="course-header">
+                        <h3 class="course-title">计算机图形学</h3>
+                        <p style="opacity: 0.9; font-size: var(--font-size-sm);">春季学期</p>
+                    </div>
+                    <div style="padding: var(--spacing-lg);">
+                        <div class="course-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">28</div>
+                                <div class="stat-label">学生数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">8</div>
+                                <div class="stat-label">章节数</div>
+                            </div>
+                        </div>
+                        <div class="course-actions">
+                            <a href="course-detail.html" class="btn btn-primary">管理课程</a>
+                            <a href="assignments.html" class="btn btn-secondary">布置作业</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title">待处理任务</h2>
+            <div class="pending-tasks">
+                <div class="task-item">
+                    <div class="task-icon">📝</div>
+                    <div class="task-content">
+                        <div class="task-title">批改《数据结构与算法》实验报告</div>
+                        <div class="task-info">15份作业待批改 • 截止时间：2024-01-20</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary btn-sm">立即批改</button>
+                    </div>
+                </div>
+                
+                <div class="task-item">
+                    <div class="task-icon">📊</div>
+                    <div class="task-content">
+                        <div class="task-title">录入《算法设计与分析》期中成绩</div>
+                        <div class="task-info">32名学生 • 截止时间：2024-01-22</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-primary btn-sm">录入成绩</button>
+                    </div>
+                </div>
+                
+                <div class="task-item">
+                    <div class="task-icon">📚</div>
+                    <div class="task-content">
+                        <div class="task-title">更新《计算机图形学》课程资料</div>
+                        <div class="task-info">第5章课件需要更新 • 建议完成时间：本周</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-secondary btn-sm">更新资料</button>
+                    </div>
+                </div>
+                
+                <div class="task-item">
+                    <div class="task-icon">💬</div>
+                    <div class="task-content">
+                        <div class="task-title">回复学生讨论区问题</div>
+                        <div class="task-info">5个问题待回复 • 数据结构与算法课程</div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-secondary btn-sm">查看问题</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // 这里可以添加一些交互功能
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟加载动画
+            document.querySelectorAll('.stat-number').forEach(stat => {
+                const finalValue = stat.textContent;
+                stat.textContent = '0';
+                
+                setTimeout(() => {
+                    let current = 0;
+                    const increment = parseInt(finalValue) / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= parseInt(finalValue)) {
+                            stat.textContent = finalValue;
+                            clearInterval(timer);
+                        } else {
+                            stat.textContent = Math.floor(current);
+                        }
+                    }, 30);
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html>
