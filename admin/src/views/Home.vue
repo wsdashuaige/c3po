@@ -1,7 +1,18 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { authService } from '../services/index.js'
 
 const router = useRouter()
+
+// 响应式状态
+const isLoggedIn = ref(false)
+const currentUser = ref(null)
+
+// 页面加载时检查登录状态
+onMounted(() => {
+  checkLoginStatus()
+})
 
 // 角色卡片数据
 const roles = [
@@ -26,7 +37,7 @@ const roles = [
 ]
 
 // 特色功能数据
-const features = [
+const features = ref([
   {
     icon: '📚',
     title: '智能课程管理',
@@ -57,11 +68,30 @@ const features = [
     title: '高效响应',
     description: '优化性能，支持高并发，响应时间小于2秒'
   }
-]
+])
 
 // 跳转到角色登录页
 const goToLogin = (path) => {
   router.push(path)
+}
+
+// 检查登录状态
+const checkLoginStatus = () => {
+  const userInfo = authService.getCurrentUser()
+  isLoggedIn.value = authService.checkAuth()
+  currentUser.value = userInfo
+}
+
+// 跳转到仪表盘
+const goToDashboard = () => {
+  router.push('/dashboard')
+}
+
+// 登出
+const logout = () => {
+  authService.logout()
+  checkLoginStatus()
+  router.push('/')
 }
 
 // 平滑滚动到指定区域
@@ -84,10 +114,28 @@ const scrollToRoles = () => {
         <div class="navbar-content">
           <a href="#" class="navbar-brand" @click.prevent>智慧学习平台</a>
           <ul class="navbar-nav">
-            <li><a href="#" class="nav-link" @click.prevent>首页</a></li>
-            <li><a href="#" class="nav-link" @click.prevent="goToLogin('/?role=student')">学生登录</a></li>
-            <li><a href="#" class="nav-link" @click.prevent="goToLogin('/?role=teacher')">教师登录</a></li>
-            <li><a href="#" class="nav-link" @click.prevent="goToLogin('/?role=admin')">管理员登录</a></li>
+            <li><a href="#" class="nav-link active" @click.prevent>首页</a></li>
+            <template v-if="!isLoggedIn">
+              <li><a href="#" class="nav-link" @click.prevent="goToLogin('/?role=student')">学生登录</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="goToLogin('/?role=teacher')">教师登录</a></li>
+              <li><a href="#" class="nav-link" @click.prevent="goToLogin('/?role=admin')">管理员登录</a></li>
+            </template>
+            <template v-else>
+              <li>
+                <a href="#" class="nav-link" @click.prevent="goToDashboard">仪表盘</a>
+              </li>
+              <li class="user-profile">
+                <div class="dropdown">
+                  <button class="dropdown-toggle nav-link">
+                    {{ currentUser?.name || currentUser?.username }}
+                  </button>
+                  <div class="dropdown-menu">
+                    <a href="#" class="dropdown-item" @click.prevent="goToDashboard">仪表盘</a>
+                    <a href="#" class="dropdown-item" @click.prevent="logout">退出登录</a>
+                  </div>
+                </div>
+              </li>
+            </template>
           </ul>
         </div>
       </div>
@@ -204,9 +252,50 @@ const scrollToRoles = () => {
 }
 
 .nav-link:hover,
-.nav-link.active {
-  color: #007aff;
-}
+  .nav-link.active {
+    color: #007aff;
+  }
+
+  /* 用户下拉菜单 */
+  .user-profile {
+    position: relative;
+  }
+
+  .dropdown-toggle {
+    background: none;
+    border: none;
+    color: #86868b;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px;
+  }
+
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 160px;
+    z-index: 1000;
+    margin-top: 8px;
+    border: 1px solid #d1d1d6;
+  }
+
+  .dropdown-item {
+    display: block;
+    padding: 12px 16px;
+    color: #1d1d1f;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+  }
+
+  .dropdown-item:hover {
+    background-color: #f5f5f7;
+  }
 
 /* Hero 区域 */
 .hero {

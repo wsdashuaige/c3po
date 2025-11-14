@@ -1,437 +1,472 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '../components/layout/MainLayout.vue'
-// 导入ECharts组件和配置
-import { use } from 'echarts/core'
-import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart } from 'echarts/charts'
-import {
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  LegendComponent
-} from 'echarts/components'
-import VChart from 'vue-echarts'
-
-// 使用必要的组件
-use([
-  CanvasRenderer,
-  LineChart,
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  LegendComponent
-])
+import { dashboardService } from '../services'
+import * as echarts from 'echarts'
 
 const router = useRouter()
 
-// 统计卡片数据
+// 响应式数据
 const statistics = ref([
   {
-    label: '总用户数',
-    value: '2,456',
-    class: 'users'
+    icon: '👥',
+    title: '总用户数',
+    value: '1,284',
+    change: 8.2,
+    color: '#0071e3'
   },
   {
-    label: '教师数量',
-    value: '128',
-    class: 'teachers'
-  },
-  {
-    label: '课程总数',
-    value: '89',
-    class: 'courses'
-  },
-  {
-    label: '活跃用户',
-    value: '1,892',
-    class: 'active'
-  }
-])
-
-// 最近活动数据
-const recentActivities = ref([
-  {
-    icon: 'user',
-    title: '新用户注册',
-    time: '张三同学注册了账号 • 5分钟前'
-  },
-  {
-    icon: 'course',
-    title: '课程审核通过',
-    time: '《人工智能基础》课程已审核通过 • 1小时前'
-  },
-  {
-    icon: 'user',
-    title: '教师账号激活',
-    time: '李教授账号已激活 • 2小时前'
-  },
-  {
-    icon: 'system',
-    title: '系统维护完成',
-    time: '数据库优化维护已完成 • 3小时前'
-  },
-  {
-    icon: 'course',
-    title: '课程内容更新',
-    time: '《数据结构与算法》课程资料已更新 • 1天前'
-  }
-])
-
-// 待处理任务数据
-const pendingTasks = ref([
-  {
-    icon: '📋',
-    title: '用户审核',
-    info: '12个新用户待审核',
-    actionText: '处理',
-    actionClass: 'btn-primary',
-    type: 'user-review'
+    icon: '👨‍🏫',
+    title: '教师人数',
+    value: '126',
+    change: 5.4,
+    color: '#5856d6'
   },
   {
     icon: '📚',
-    title: '课程审核',
-    info: '5门课程待审核',
-    actionText: '审核',
-    actionClass: 'btn-primary',
-    type: 'course-review'
+    title: '课程总数',
+    value: '342',
+    change: 12.8,
+    color: '#34c759'
   },
   {
-    icon: '⚠️',
-    title: '系统告警',
-    info: '3个系统告警需要处理',
-    actionText: '查看',
-    actionClass: 'btn-warning',
-    type: 'system-alert'
-  },
-  {
-    icon: '📊',
-    title: '数据备份',
-    info: '本周数据备份任务',
-    actionText: '备份',
-    actionClass: 'btn-secondary',
-    type: 'data-backup'
+    icon: '🎓',
+    title: '活跃学生',
+    value: '958',
+    change: 6.3,
+    color: '#ff9500'
   }
 ])
 
-// 获取活动图标
-const getActivityIcon = (iconType) => {
-  const iconMap = {
-    user: '👤',
-    course: '📚',
-    system: '⚙️'
+const recentActivities = ref([
+  {
+    id: 1,
+    user: '张三',
+    action: '完成了课程',
+    course: '高等数学基础',
+    time: '2小时前',
+    avatar: '张'
+  },
+  {
+    id: 2,
+    user: '李四',
+    action: '提交了作业',
+    course: '数据结构与算法',
+    time: '3小时前',
+    avatar: '李'
+  },
+  {
+    id: 3,
+    user: '王五',
+    action: '创建了课程',
+    course: '机器学习入门',
+    time: '昨天',
+    avatar: '王'
   }
-  return iconMap[iconType] || '📝'
-}
+])
 
-// 模态框状态
-const showModal = ref(false)
-const currentTask = ref(null)
-
-// 处理任务
-const handleTask = (task) => {
-  currentTask.value = task
-  showModal.value = true
-}
-
-// 关闭模态框
-const closeModal = () => {
-  showModal.value = false
-  currentTask.value = null
-}
-
-// 获取任务类型的详细内容
-const getTaskModalContent = (task) => {
-  const contentMap = {
-    'user-review': {
-      title: '用户审核',
-      description: '当前有 12 个新用户等待审核，请前往用户管理页面进行审核操作。',
-      confirmText: '前往审核',
-      cancelText: '稍后处理'
-    },
-    'course-review': {
-      title: '课程审核',
-      description: '当前有 5 门课程等待审核，请前往课程审核页面进行审核操作。',
-      confirmText: '前往审核',
-      cancelText: '稍后处理'
-    },
-    'system-alert': {
-      title: '系统告警',
-      description: '检测到 3 个系统告警需要处理，请及时查看并处理相关问题。',
-      confirmText: '查看详情',
-      cancelText: '稍后查看'
-    },
-    'data-backup': {
-      title: '数据备份',
-      description: '本周数据备份任务，建议立即执行备份操作以确保数据安全。',
-      confirmText: '立即备份',
-      cancelText: '稍后备份'
-    }
+const pendingTasks = ref([
+  {
+    id: 1,
+    title: '用户审核',
+    due: '今天',
+    priority: 'high',
+    count: 8
+  },
+  {
+    id: 2,
+    title: '课程审核',
+    due: '明天',
+    priority: 'high',
+    count: 12
+  },
+  {
+    id: 3,
+    title: '课程更新',
+    due: '3天后',
+    priority: 'low',
+    count: 3
   }
-  return contentMap[task.type] || {
-    title: task.title,
-    description: task.info,
-    confirmText: '确认',
-    cancelText: '取消'
-  }
-}
+])
 
-// 确认处理任务
-const confirmTask = () => {
-  if (currentTask.value) {
-    // 根据任务类型执行不同的操作
-    switch (currentTask.value.type) {
-      case 'user-review':
-        // 跳转到用户管理页面
-        closeModal()
-        router.push('/users')
-        break
-      case 'course-review':
-        // 跳转到课程管理页面
-        closeModal()
-        router.push('/courses')
-        break
-      case 'system-alert':
-        // 实际项目中这里会跳转到系统告警页面
-        alert('正在查看系统告警详情...')
-        closeModal()
-        break
-      case 'data-backup':
-        // 实际项目中这里会执行备份操作
-        alert('正在执行数据备份...')
-        closeModal()
-        break
-      default:
-        alert(`正在处理：${currentTask.value.title}`)
-        closeModal()
-    }
+const popularCourses = ref([
+  {
+    id: 1,
+    name: 'Python编程基础',
+    students: 284,
+    progress: 78
+  },
+  {
+    id: 2,
+    name: 'Web前端开发',
+    students: 236,
+    progress: 65
+  },
+  {
+    id: 3,
+    name: '数据库原理',
+    students: 189,
+    progress: 92
   }
-}
+])
 
-// 平台使用统计图表数据
-const platformUsageData = ref({
-  title: {
-    text: '平台使用率趋势（最近7天）',
-    left: 'center',
-    textStyle: {
-      fontSize: 16,
-      fontWeight: 'normal'
-    }
+// 时间范围选择
+const timeRange = ref('week')
+const timeRanges = [
+  { value: 'week', label: '本周' },
+  { value: 'month', label: '本月' },
+  { value: 'quarter', label: '本季度' },
+  { value: 'year', label: '全年' }
+]
+
+// 图表相关数据
+const chartData = ref({
+  week: {
+    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+    values: [65, 78, 92, 88, 95, 75, 82]
   },
-  tooltip: {
-    trigger: 'axis',
-    formatter: function(params) {
-      let result = params[0].name + '<br/>';
-      params.forEach(item => {
-        result += item.marker + item.seriesName + ': ' + item.value + '%<br/>';
-      });
-      return result;
-    }
+  month: {
+    labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'].slice(0, 6),
+    values: [185, 210, 225, 240, 215, 260]
   },
-  legend: {
-    data: ['活跃用户', '课程访问', '作业提交'],
-    bottom: 0
+  quarter: {
+    labels: ['Q1', 'Q2', 'Q3', 'Q4'],
+    values: [650, 720, 680, 760]
   },
-  grid: {
-    left: '3%',
-    right: '4%',
-    bottom: '15%',
-    top: '15%',
-    containLabel: true
-  },
-  xAxis: {
-    type: 'category',
-    boundaryGap: false,
-    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-  },
-  yAxis: {
-    type: 'value',
-    axisLabel: {
-      formatter: '{value}%'
-    },
-    max: 100
-  },
-  series: [
-    {
-      name: '活跃用户',
-      type: 'line',
-      stack: 'Total',
-      data: [65, 72, 78, 73, 79, 85, 82],
-      lineStyle: {
-        width: 3
-      },
-      itemStyle: {
-        color: '#007aff'
-      },
-      areaStyle: {
-        opacity: 0.2
-      },
-      smooth: true
-    },
-    {
-      name: '课程访问',
-      type: 'line',
-      stack: 'Total',
-      data: [52, 60, 68, 59, 65, 75, 70],
-      lineStyle: {
-        width: 3
-      },
-      itemStyle: {
-        color: '#34c759'
-      },
-      areaStyle: {
-        opacity: 0.2
-      },
-      smooth: true
-    },
-    {
-      name: '作业提交',
-      type: 'line',
-      stack: 'Total',
-      data: [40, 45, 42, 38, 48, 52, 49],
-      lineStyle: {
-        width: 3
-      },
-      itemStyle: {
-        color: '#ff9500'
-      },
-      areaStyle: {
-        opacity: 0.2
-      },
-      smooth: true
-    }
-  ]
+  year: {
+    labels: ['2023', '2024'],
+    values: [2850, 3120]
+  }
 })
 
-// 数字动画效果
-onMounted(() => {
-  const statNumbers = document.querySelectorAll('.stat-number')
-  statNumbers.forEach(stat => {
-    const finalValue = stat.textContent
-    stat.textContent = '0'
+// 图表实例引用
+const chartRef = ref(null)
+const chartInstance = ref(null)
+
+// 切换时间范围
+const changeTimeRange = (range) => {
+  timeRange.value = range
+  updateChart()
+}
+
+// 初始化图表
+const initChart = () => {
+  if (chartRef.value && !chartInstance.value) {
+    chartInstance.value = echarts.init(chartRef.value)
+    updateChart()
     
-    setTimeout(() => {
-      let current = 0
-      const targetValue = parseInt(finalValue.replace(',', ''))
-      const increment = targetValue / 50
-      const timer = setInterval(() => {
-        current += increment
-        if (current >= targetValue) {
-          stat.textContent = finalValue
-          clearInterval(timer)
-        } else {
-          stat.textContent = Math.floor(current).toLocaleString()
+    // 监听窗口大小变化，自动调整图表大小
+    window.addEventListener('resize', handleResize)
+  }
+}
+
+// 更新图表数据和配置
+const updateChart = () => {
+  if (!chartInstance.value) return
+  
+  const data = chartData.value[timeRange.value]
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e8e8e8',
+      textStyle: {
+        color: '#333'
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      top: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: data.labels,
+      axisLine: {
+        lineStyle: {
+          color: '#e8e8e8'
         }
-      }, 30)
-    }, 500)
-  })
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#666',
+        fontSize: 12
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: {
+        show: false
+      },
+      axisTick: {
+        show: false
+      },
+      axisLabel: {
+        color: '#666',
+        fontSize: 12
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f0f0f0',
+          type: 'dashed'
+        }
+      }
+    },
+    series: [
+      {
+        name: '活跃用户数',
+        type: 'line',
+        smooth: true,
+        data: data.values,
+        lineStyle: {
+          width: 3,
+          color: '#0071e3'
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            {
+              offset: 0,
+              color: 'rgba(0, 113, 227, 0.3)'
+            },
+            {
+              offset: 1,
+              color: 'rgba(0, 113, 227, 0.05)'
+            }
+          ])
+        },
+        itemStyle: {
+          color: '#0071e3',
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        emphasis: {
+          scale: true,
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 113, 227, 0.5)'
+          }
+        }
+      }
+    ]
+  }
+  
+  chartInstance.value.setOption(option)
+}
+
+// 处理窗口大小变化
+const handleResize = () => {
+  chartInstance.value?.resize()
+}
+
+// 清理图表实例
+const disposeChart = () => {
+  if (chartInstance.value) {
+    chartInstance.value.dispose()
+    chartInstance.value = null
+    window.removeEventListener('resize', handleResize)
+  }
+}
+
+// 查看所有活动
+const viewAllActivities = () => {
+  alert('查看所有活动')
+}
+
+// 查看所有任务
+const viewAllTasks = () => {
+  alert('查看所有任务')
+}
+
+// 查看单个任务详情
+const viewTaskDetail = (taskId) => {
+  // 根据任务ID实现条件跳转，添加待审核状态参数
+  if (taskId === 1) {
+    // 用户审核跳转到用户管理页面的待审核列
+    router.push({ path: '/admin/users', query: { status: 'pending' } })
+  } else if (taskId === 2 || taskId === 3) {
+    // 课程审核和课程更新都跳转到课程管理页面的待审核列
+    router.push({ path: '/admin/courses', query: { status: 'pending' } })
+  } else {
+    // 其他任务保持原有逻辑
+    router.push({ path: `/admin/tasks/${taskId}` })
+  }
+}
+
+// 查看课程详情
+const viewCourseDetail = (courseId) => {
+  alert(`查看课程ID: ${courseId} 的详情`)
+}
+
+// 页面挂载时执行
+onMounted(() => {
+  // 这里可以添加数据加载逻辑
+  console.log('Dashboard mounted')
+  // 初始化图表
+  setTimeout(() => {
+    initChart()
+  }, 100)
+})
+
+// 页面卸载时清理
+onUnmounted(() => {
+  disposeChart()
 })
 </script>
 
 <template>
   <MainLayout>
-    <main class="main-content">
-      <header class="header">
-        <div class="header-content">
-          <h1 class="welcome-text">系统管理后台</h1>
-          <div class="user-info">
-            <div class="user-avatar">管</div>
-            <span>系统管理员</span>
-          </div>
-        </div>
-      </header>
+    <div class="dashboard">
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <h1>欢迎回来</h1>
+        <p>这里是你的系统概览，展示平台的关键数据和最新动态</p>
+      </div>
 
-      <div class="stats-grid">
+      <!-- 统计卡片 -->
+      <div class="statistics-grid">
         <div 
           v-for="(stat, index) in statistics" 
           :key="index"
           class="stat-card"
+          :style="{ borderLeftColor: stat.color }"
         >
-          <div class="stat-number" :class="stat.class">{{ stat.value }}</div>
-          <div class="stat-label">{{ stat.label }}</div>
+          <div class="stat-icon" :style="{ backgroundColor: `${stat.color}10`, color: stat.color }">
+            {{ stat.icon }}
+          </div>
+          <div class="stat-content">
+            <h3>{{ stat.title }}</h3>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-change" :class="stat.change > 0 ? 'positive' : 'negative'">
+              {{ stat.change > 0 ? '↑' : '↓' }} {{ Math.abs(stat.change) }}%
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="overview-grid">
-        <div class="recent-activities">
-          <h3 class="section-title">最近活动</h3>
-          <div 
-            v-for="(activity, index) in recentActivities" 
-            :key="index"
-            class="activity-item"
-          >
-            <div class="activity-icon" :class="activity.icon">
-              {{ getActivityIcon(activity.icon) }}
+      <!-- 主要内容区域 -->
+      <div class="dashboard-content">
+        <!-- 信息面板 - 并排放置待办任务和最近活动 -->
+        <div class="top-panels">
+          <!-- 最近活动 -->
+          <div class="panel">
+            <div class="panel-header">
+              <h3>最近活动</h3>
+              <a href="#" class="view-all" @click.prevent="viewAllActivities">查看全部</a>
             </div>
-            <div class="activity-content">
-              <div class="activity-title">{{ activity.title }}</div>
-              <div class="activity-time">{{ activity.time }}</div>
+            <div class="activity-list">
+              <div 
+                v-for="activity in recentActivities" 
+                :key="activity.id"
+                class="activity-item"
+              >
+                <div class="activity-avatar-placeholder" :style="{ backgroundColor: activity.color || '#0071e3' }">
+                  {{ activity.avatar }}
+                </div>
+                <div class="activity-content">
+                  <div class="activity-text">
+                    {{ activity.user }} {{ activity.action }} <span class="activity-course">{{ activity.course }}</span>
+                  </div>
+                  <div class="activity-time">{{ activity.time }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 待办任务 -->
+          <div class="panel">
+            <div class="panel-header">
+              <h3>待办任务</h3>
+              <a href="#" class="view-all" @click.prevent="viewAllTasks">查看全部</a>
+            </div>
+            <div class="tasks-list">
+              <div 
+                v-for="task in pendingTasks" 
+                :key="task.id"
+                class="task-item"
+              >
+                <div class="task-info">
+                  <div class="task-title">{{ task.title }}</div>
+                  <div class="task-meta">
+                    <span class="task-due">截止: {{ task.due }}</span>
+                    <span class="task-priority" :class="`priority-${task.priority}`">
+                      {{ task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低' }}优先级
+                    </span>
+                  </div>
+                </div>
+                <div class="task-actions">
+                  <span class="task-count">{{ task.count }}</span>
+                  <button 
+                    class="view-task-btn"
+                    @click="viewTaskDetail(task.id)"
+                    title="查看任务详情"
+                  >
+                    查看
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="pending-tasks">
-          <h3 class="section-title">待处理任务</h3>
-          <div 
-            v-for="(task, index) in pendingTasks" 
-            :key="index"
-            class="task-item"
-          >
-            <div class="task-icon">{{ task.icon }}</div>
-            <div class="task-content">
-              <div class="task-title">{{ task.title }}</div>
-              <div class="task-info">{{ task.info }}</div>
-            </div>
-            <div class="task-actions">
+        <!-- 图表区域 - 放在下方 -->
+        <div class="chart-section">
+          <div class="section-header">
+            <h2>平台活跃度趋势</h2>
+            <div class="chart-controls">
               <button 
-                class="btn btn-sm" 
-                :class="task.actionClass"
-                @click="handleTask(task)"
+                v-for="range in timeRanges" 
+                :key="range.value"
+                class="control-btn active"
+                @click="changeTimeRange(range.value)"
               >
-                {{ task.actionText }}
+                {{ range.label }}
               </button>
             </div>
           </div>
+          <div class="chart-container">
+            <div 
+              ref="chartRef" 
+              class="chart"
+              style="width: 100%; height: 300px;"
+            ></div>
+          </div>
         </div>
       </div>
 
-      <div class="chart-container">
-        <h3 class="chart-title">平台使用统计</h3>
-        <v-chart class="chart-content" :option="platformUsageData" autoresize />
-      </div>
-    </main>
-
-    <!-- 任务处理模态框 -->
-    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content" @click.stop>
-        <div class="modal-header">
-          <h3 class="modal-title" v-if="currentTask">{{ getTaskModalContent(currentTask).title }}</h3>
-          <button class="modal-close" @click="closeModal">&times;</button>
+      <!-- 热门课程 -->
+      <div class="popular-courses">
+        <div class="panel-header">
+          <h3>热门课程</h3>
+          <a href="#" class="view-all">查看全部</a>
         </div>
-        <div class="modal-body" v-if="currentTask">
-          <div class="task-modal-info">
-            <div class="task-modal-icon">{{ currentTask.icon }}</div>
-            <div class="task-modal-details">
-              <h4>{{ currentTask.title }}</h4>
-              <p>{{ currentTask.info }}</p>
+        <div class="courses-list">
+          <div 
+            v-for="course in popularCourses" 
+            :key="course.id"
+            class="course-item"
+            @click="viewCourseDetail(course.id)"
+          >
+            <div class="course-icon">📚</div>
+            <div class="course-info">
+              <h4>{{ course.name }}</h4>
+              <div class="course-stats">
+                <span>👥 {{ course.students }} 人学习</span>
+                <span>📈 进度 {{ course.progress }}%</span>
+              </div>
+            </div>
+            <div class="course-progress">
+              <div class="progress-bar">
+                <div class="progress-fill" :style="{ width: `${course.progress}%` }"></div>
+              </div>
+              <span class="progress-text">{{ course.progress }}%</span>
             </div>
           </div>
-          <div class="task-modal-description">
-            <p>{{ getTaskModalContent(currentTask).description }}</p>
-          </div>
-        </div>
-        <div class="modal-footer" v-if="currentTask">
-          <button class="btn btn-secondary" @click="closeModal">
-            {{ getTaskModalContent(currentTask).cancelText }}
-          </button>
-          <button 
-            class="btn" 
-            :class="currentTask.actionClass"
-            @click="confirmTask"
-          >
-            {{ getTaskModalContent(currentTask).confirmText }}
-          </button>
         </div>
       </div>
     </div>
@@ -439,436 +474,483 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.main-content {
+.dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 24px;
-  min-height: 100vh;
 }
 
-.header {
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+.page-header {
+  margin-bottom: 32px;
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.welcome-text {
-  font-size: 20px;
-  font-weight: 600;
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 700;
   color: #1d1d1f;
-  margin: 0;
+  margin-bottom: 8px;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.page-header p {
+  font-size: 16px;
+  color: #86868b;
 }
 
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #ff3b30;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-}
-
-.stats-grid {
+.statistics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
   margin-bottom: 32px;
 }
 
 .stat-card {
-  background: #ffffff;
-  padding: 24px;
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  text-align: center;
+  padding: 24px;
+  border-left: 4px solid #0071e3;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
 
-.stat-number {
-  font-size: 24px;
-  font-weight: 700;
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+  font-size: 32px;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.stat-content h3 {
+  font-size: 14px;
+  font-weight: 500;
+  color: #86868b;
   margin-bottom: 8px;
 }
 
-.stat-number.users {
-  color: #007aff;
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 4px;
 }
 
-.stat-number.teachers {
-  color: #5856d6;
+.stat-change {
+  font-size: 14px;
+  font-weight: 500;
 }
 
-.stat-number.courses {
+.stat-change.positive {
   color: #34c759;
 }
 
-.stat-number.active {
-  color: #ff9500;
+.stat-change.negative {
+  color: #ff3b30;
 }
 
-.stat-label {
-  color: #86868b;
-  font-size: 14px;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin-bottom: 24px;
-}
-
-.overview-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
   margin-bottom: 32px;
 }
 
-.recent-activities {
+.top-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.chart-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    margin-top: 0;
+  }
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.control-btn {
+  padding: 6px 16px;
+  border: 1px solid #d2d2d7;
+  background: white;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.control-btn.active {
+    background: #0071e3;
+    color: #fff;
+    border-color: #0071e3;
+    opacity: 1;
+  }
+
+  /* 所有按钮默认都是激活状态 */
+  .control-btn {
+    background: #0071e3;
+    color: #fff;
+    border-color: #0071e3;
+  }
+
+.control-btn:hover:not(.active) {
+  background: #f5f5f7;
+}
+
+.chart-container {
+  height: 300px;
+  border-radius: 8px;
   background: #ffffff;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+.info-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.panel {
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.view-all {
+  font-size: 14px;
+  color: #0071e3;
+  text-decoration: none;
+}
+
+.view-all:hover {
+  text-decoration: underline;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .activity-item {
   display: flex;
-  align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #d1d1d6;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .activity-item:last-child {
   border-bottom: none;
 }
 
-.activity-icon {
-  width: 40px;
-  height: 40px;
+.activity-avatar,
+.activity-avatar-placeholder {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
+  background: #0071e3;
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-weight: 500;
+  font-size: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.activity-icon.user {
-  background: rgba(0, 122, 255, 0.1);
-  color: #007aff;
-}
-
-.activity-icon.course {
-  background: rgba(52, 199, 89, 0.1);
-  color: #34c759;
-}
-
-.activity-icon.system {
-  background: rgba(255, 149, 0, 0.1);
-  color: #ff9500;
+.activity-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .activity-content {
   flex: 1;
 }
 
-.activity-title {
-  font-weight: 500;
+.activity-text {
+  font-size: 14px;
+  line-height: 1.4;
   color: #1d1d1f;
-  margin-bottom: 4px;
+}
+
+.activity-course {
+  color: #0071e3;
+  font-weight: 500;
 }
 
 .activity-time {
-  font-size: 14px;
+  font-size: 12px;
   color: #86868b;
+  margin-top: 4px;
 }
 
-.pending-tasks {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 24px;
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .task-item {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #d1d1d6;
-  gap: 16px;
+  padding: 12px;
+  background: #f5f5f7;
+  border-radius: 8px;
 }
 
-.task-item:last-child {
-  border-bottom: none;
-}
-
-.task-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 59, 48, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ff3b30;
-  font-size: 18px;
-}
-
-.task-content {
+.task-info {
   flex: 1;
 }
 
 .task-title {
+  font-size: 14px;
   font-weight: 500;
   color: #1d1d1f;
   margin-bottom: 4px;
 }
 
-.task-info {
-  font-size: 14px;
+.task-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.task-due {
+  font-size: 12px;
   color: #86868b;
+}
+
+.task-priority {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.priority-high {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.priority-medium {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.priority-low {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.task-count {
+  background: #0071e3;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 28px;
+  text-align: center;
+  margin-right: 8px;
 }
 
 .task-actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
 }
 
-.chart-container {
-  background: #ffffff;
+.view-task-btn {
+  background: #34c759;
+  color: #fff;
+  border: none;
+  padding: 4px 12px;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.view-task-btn:hover {
+  background: #30b755;
+}
+
+.popular-courses {
+  background: white;
+  border-radius: 12px;
   padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   margin-bottom: 32px;
 }
 
-.chart-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin-bottom: 24px;
-  text-align: center;
+.courses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
 }
 
-.chart-content {
-  height: 300px;
-  width: 100%;
+.course-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+}
+
+.course-item:hover {
+  background: #f2f2f7;
+}
+
+.course-icon {
+  font-size: 24px;
+  width: 48px;
+  height: 48px;
+  background: white;
   border-radius: 12px;
-}
-
-/* 按钮样式 */
-.btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 36px;
-  gap: 8px;
+  flex-shrink: 0;
 }
 
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 14px;
-  min-height: 32px;
+.course-info {
+  flex: 1;
 }
 
-.btn-primary {
-  background-color: #007aff;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #0056cc;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-secondary {
-  background-color: #ffffff;
+.course-info h4 {
+  font-size: 16px;
+  font-weight: 600;
   color: #1d1d1f;
-  border: 1px solid #d1d1d6;
+  margin-bottom: 8px;
 }
 
-.btn-secondary:hover {
-  background-color: #f2f2f7;
-  transform: translateY(-1px);
+.course-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: #86868b;
 }
 
-.btn-warning {
-  background-color: #ff9500;
-  color: white;
+.course-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 100px;
 }
 
-.btn-warning:hover {
-  background-color: #e08a00;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.progress-bar {
+  width: 100px;
+  height: 8px;
+  background: #d2d2d7;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #0071e3;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #0071e3;
 }
 
 /* 响应式设计 */
 @media (max-width: 1024px) {
-  .overview-grid {
+  .dashboard-content {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 768px) {
-  .stats-grid {
+  
+  .statistics-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
-  .header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
 }
 
-@media (max-width: 480px) {
-  .stats-grid {
+@media (max-width: 640px) {
+  .statistics-grid {
     grid-template-columns: 1fr;
   }
   
-  .main-content {
-    padding: 16px;
+  .stat-card {
+    padding: 20px;
   }
-}
-
-/* 模态框样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background: #ffffff;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  border-bottom: 1px solid #d1d1d6;
-}
-
-.modal-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #86868b;
-  cursor: pointer;
-  padding: 8px;
-  line-height: 1;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-}
-
-.modal-close:hover {
-  background-color: #f2f2f7;
-  color: #1d1d1f;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.task-modal-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.task-modal-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: rgba(255, 59, 48, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ff3b30;
-  font-size: 24px;
-}
-
-.task-modal-details h4 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1d1d1f;
-  margin: 0 0 8px 0;
-}
-
-.task-modal-details p {
-  font-size: 14px;
-  color: #86868b;
-  margin: 0;
-}
-
-.task-modal-description {
-  padding: 16px;
-  background: #f2f2f7;
-  border-radius: 8px;
-}
-
-.task-modal-description p {
-  margin: 0;
-  color: #1d1d1f;
-  font-size: 14px;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 24px;
-  border-top: 1px solid #d1d1d6;
+  
+  .course-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .course-progress {
+    width: 100%;
+    align-items: stretch;
+  }
+  
+  .progress-bar {
+    width: 100%;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }
 </style>

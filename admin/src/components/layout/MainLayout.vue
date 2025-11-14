@@ -26,37 +26,37 @@ const menuItems = [
     id: 'dashboard',
     title: '仪表板',
     icon: '📊',
-    path: '/dashboard'
+    path: '/admin/dashboard'
   },
   {
     id: 'users',
     title: '用户管理',
     icon: '👥',
-    path: '/users'
+    path: '/admin/users'
   },
   {
     id: 'courses',
     title: '课程管理',
     icon: '📚',
-    path: '/courses'
+    path: '/admin/courses'
   },
   {
     id: 'statistics',
     title: '统计分析',
     icon: '📈',
-    path: '/statistics'
+    path: '/admin/statistics'
   },
   {
     id: 'settings',
     title: '系统设置',
     icon: '⚙️',
-    path: '/settings'
+    path: '/admin/settings'
   },
   {
     id: 'profile',
     title: '个人中心',
     icon: '👤',
-    path: '/profile'
+    path: '/admin/profile'
   },
   {
     id: 'logout',
@@ -74,10 +74,10 @@ const toggleSidebar = () => {
 const logout = () => {
   // 清除登录状态
   localStorage.removeItem('token')
-  localStorage.removeItem('username')
-  localStorage.removeItem('isLoggedIn')
+  localStorage.removeItem('admin_token')
+  localStorage.removeItem('userInfo')
   // 跳转到登录页
-  router.push('/')
+  router.push('/login')
 }
 
 const handleResize = () => {
@@ -90,7 +90,7 @@ const handleResize = () => {
 }
 
 const navigateToProfile = () => {
-  router.push('/profile')
+  router.push('/admin/profile')
 }
 </script>
 
@@ -425,17 +425,26 @@ const navigateToProfile = () => {
 }
 
 .avatar, .avatar-placeholder {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: #0071e3;
   color: white;
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600;
+  font-size: 18px;
   overflow: hidden;
+  border: 2px solid #409eff;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+  transition: all 0.3s ease;
+}
+
+.avatar:hover, .avatar-placeholder:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.5);
+  border-color: #66b1ff;
 }
 
 .avatar img {
