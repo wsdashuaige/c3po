@@ -162,6 +162,39 @@
 
 ### 4.2 用户与角色管理
 
+#### GET `/api/v1/users/me`
+- **角色**：已认证用户
+- **描述**：获取当前登录用户的完整信息，包括基本账户信息和角色对应的档案（学生档案或教师档案）。
+- **响应示例**
+  ```json
+  {
+    "traceId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "success": true,
+    "data": {
+      "id": "4c07ffdf-1a6a-4466-b5a2-2f6f61c3e805",
+      "username": "alice",
+      "email": "alice@example.com",
+      "role": "STUDENT",
+      "status": "ACTIVE",
+      "createdAt": "2025-11-12T08:00:00Z",
+      "updatedAt": "2025-11-12T08:00:00Z",
+      "studentProfile": {
+        "studentNo": "20250001",
+        "grade": "2025",
+        "major": "计算机科学",
+        "className": "计科 2501"
+      },
+      "teacherProfile": null
+    },
+    "meta": null,
+    "error": null
+  }
+  ```
+- **说明**：
+  - 根据用户的 `role` 字段，会返回对应的 `studentProfile` 或 `teacherProfile`（另一个为 `null`）。
+  - 管理员角色（`ADMIN`）的两个 profile 字段均为 `null`。
+- **异常**：`401`（未认证）。
+
 #### GET `/api/v1/users/me/preferences`
 - **角色**：已认证用户
 - **描述**：获取当前登录用户的偏好设置（通知偏好、隐私设置、语言等）。
