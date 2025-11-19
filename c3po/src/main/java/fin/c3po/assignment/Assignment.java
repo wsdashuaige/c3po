@@ -1,15 +1,19 @@
 package fin.c3po.assignment;
 
 import fin.c3po.common.domain.BaseEntity;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -49,7 +53,8 @@ public class Assignment extends BaseEntity {
     private String gradingRubric; // JSON string for rubric (kept simple)
 
     @ElementCollection
+    @CollectionTable(name = "assignment_visibility_tags", joinColumns = @JoinColumn(name = "assignment_id"))
+    @Column(name = "visibility_tags")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private List<String> visibilityTags = new ArrayList<>();
 }
-
-
