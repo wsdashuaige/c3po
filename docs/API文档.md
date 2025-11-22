@@ -1249,7 +1249,95 @@
 
 > 注：审计日志查询接口仍在规划阶段，将于权限细粒度改造后一并交付。
 
-### 4.10 异步任务与报表
+### 4.10 Dashboard 仪表板接口
+
+Dashboard 接口用于管理员前端展示平台概览数据和统计信息。
+
+#### GET `/api/v1/dashboard/overview`
+- **角色**：已认证用户（推荐管理员使用）
+- **描述**：获取 Dashboard 概览数据，包括总成员数、活跃成员数、活动总数和待审批申请数。
+- **响应示例**
+```json
+{
+  "traceId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "success": true,
+  "data": {
+    "totalMembers": 125,
+    "activeMembers": 89,
+    "totalActivities": 42,
+    "pendingApplications": 7
+  },
+  "meta": null,
+  "error": null
+}
+```
+
+#### GET `/api/v1/dashboard/recent-activities`
+- **角色**：已认证用户
+- **描述**：获取最近活动概览数据，包括累计活动数、活跃成员数和审批通过率。
+- **响应示例**
+```json
+{
+  "traceId": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
+  "success": true,
+  "data": {
+    "totalActivities": 42,
+    "activeMembers": 89,
+    "approvalRate": 85.0
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **说明**：`approvalRate` 为百分比数值（0-100），计算方式为：已批准申请数 / 总申请数 × 100
+
+#### GET `/api/v1/dashboard/pending-tasks`
+- **角色**：已认证用户
+- **描述**：获取待处理任务数据，包括待审批申请数、活动数据总览和成员活跃情况。
+- **响应示例**
+```json
+{
+  "traceId": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+  "success": true,
+  "data": {
+    "pendingApplications": 7,
+    "activityCount": 42,
+    "activeMembers": 89,
+    "totalMembers": 125
+  },
+  "meta": null,
+  "error": null
+}
+```
+
+#### GET `/api/v1/dashboard/usage-trend`
+- **角色**：已认证用户
+- **描述**：获取平台使用率趋势数据（最近N天），包括活跃用户、课程访问和作业提交的趋势。
+- **查询参数**
+  - `days`（可选，默认 `7`）：查询最近多少天的数据，范围 1-30。
+- **响应示例**
+```json
+{
+  "traceId": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
+  "success": true,
+  "data": {
+    "dates": ["2025-11-13", "2025-11-14", "2025-11-15", "2025-11-16", "2025-11-17", "2025-11-18", "2025-11-19"],
+    "activeUsers": [65.0, 67.5, 70.0, 72.5, 75.0, 70.0, 65.0],
+    "courseVisits": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    "assignmentSubmissions": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  },
+  "meta": null,
+  "error": null
+}
+```
+- **说明**：
+  - `dates`：日期列表，格式为 `YYYY-MM-DD`
+  - `activeUsers`：每日活跃用户百分比（0-100），当前为模拟数据
+  - `courseVisits`：每日课程访问百分比（0-100），当前为模拟数据
+  - `assignmentSubmissions`：每日作业提交百分比（0-100），当前为模拟数据
+  - 注意：课程访问和作业提交的统计数据将在后续版本中实现真实数据收集
+
+### 4.11 异步任务与报表
 
 #### POST `/api/v1/jobs/reports`
 - 创建报表（成绩单、课程统计）。请求示例：
@@ -1274,7 +1362,7 @@
 #### POST `/api/v1/jobs/{jobId}/cancel`
 - 取消未完成任务。
 
-### 4.11 系统健康与运维
+### 4.12 系统健康与运维
 
 #### GET `/actuator/health`
 - 基础健康检查，返回应用、数据库、对象存储、消息队列状态。
