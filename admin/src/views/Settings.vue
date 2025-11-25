@@ -1,194 +1,327 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import MainLayout from '../components/layout/MainLayout.vue'
+import { settingsAPI } from '../services/api'
 
-// 基本设置
-const basicSettings = reactive({
-  platformName: '智慧学习平台',
-  defaultSemester: '春季学期',
-  announcement: ''
+// 加载状态
+const loading = ref(false)
+const saving = ref(false)
+
+// 维护窗口设置
+const maintenanceWindow = reactive({
+  enabled: false,
+  startAt: '',
+  endAt: '',
+  message: ''
 })
 
-// 安全设置
-const securitySettings = reactive({
-  strongPassword: true,
-  twoFactorAuth: false,
-  sessionTimeout: '30分钟'
+// 密码策略设置
+const passwordPolicy = reactive({
+  minLength: 8,
+  requireUppercase: true,
+  requireNumber: true,
+  requireSpecial: false,
+  expiryDays: null
 })
 
-// 通知设置
-const notificationSettings = reactive({
-  systemNotification: true,
-  courseReview: true,
-  alertNotification: true
+// 告警阈值设置
+const alertThresholds = reactive({
+  loginFailure: 5,
+  storageUsagePercent: 80,
+  jobQueueDelayMinutes: 10
 })
-
-// 外观设置
-const appearanceSettings = reactive({
-  themeColor: '默认（蓝）',
-  borderRadius: '默认'
-})
-
-// 保存基本设置
-const saveBasicSettings = () => {
-  // 在实际应用中，这里会调用API保存设置
-  console.log('保存基本设置', basicSettings)
-  showMessage('设置保存成功')
-}
-
-// 重置基本设置
-const resetBasicSettings = () => {
-  basicSettings.platformName = '智慧学习平台'
-  basicSettings.defaultSemester = '春季学期'
-  basicSettings.announcement = ''
-  showMessage('设置已重置')
-}
 
 // 消息提示
 const message = ref('')
-const showMessage = (text) => {
+const messageType = ref('success') // 'success' or 'error'
+const showMessage = (text, type = 'success') => {
   message.value = text
+  messageType.value = type
   setTimeout(() => {
     message.value = ''
   }, 3000)
 }
+
+// 格式化日期时间（用于显示）
+const formatDateTime = (instant) => {
+  if (!instant) return ''
+  const date = new Date(instant)
+  if (isNaN(date.getTime())) return ''
+  // 格式化为 YYYY-MM-DDTHH:mm 用于 datetime-local 输入
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+// 解析日期时间（从 datetime-local 输入）
+const parseDateTime = (dateTimeString) => {
+  if (!dateTimeString) return null
+  return new Date(dateTimeString).toISOString()
+}
+
+// 加载系统设置
+const loadSettings = async () => {
+  loading.value = true
+  try {
+    const response = await settingsAPI.getSettings()
+    const data = response.data || response
+    
+    // 更新维护窗口
+    if (data.maintenanceWindow) {
+      maintenanceWindow.enabled = data.maintenanceWindow.enabled || false
+      maintenanceWindow.startAt = formatDateTime(data.maintenanceWindow.startAt)
+      maintenanceWindow.endAt = formatDateTime(data.maintenanceWindow.endAt)
+      maintenanceWindow.message = data.maintenanceWindow.message || ''
+    }
+    
+    // 更新密码策略
+    if (data.passwordPolicy) {
+      passwordPolicy.minLength = data.passwordPolicy.minLength || 8
+      passwordPolicy.requireUppercase = data.passwordPolicy.requireUppercase !== undefined ? data.passwordPolicy.requireUppercase : true
+      passwordPolicy.requireNumber = data.passwordPolicy.requireNumber !== undefined ? data.passwordPolicy.requireNumber : true
+      passwordPolicy.requireSpecial = data.passwordPolicy.requireSpecial !== undefined ? data.passwordPolicy.requireSpecial : false
+      passwordPolicy.expiryDays = data.passwordPolicy.expiryDays || null
+    }
+    
+    // 更新告警阈值
+    if (data.alertThresholds) {
+      alertThresholds.loginFailure = data.alertThresholds.loginFailure || 5
+      alertThresholds.storageUsagePercent = data.alertThresholds.storageUsagePercent || 80
+      alertThresholds.jobQueueDelayMinutes = data.alertThresholds.jobQueueDelayMinutes || 10
+    }
+  } catch (err) {
+    console.error('加载系统设置失败:', err)
+    showMessage('加载设置失败: ' + (err.message || '未知错误'), 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 保存系统设置
+const saveSettings = async () => {
+  saving.value = true
+  try {
+    const requestData = {
+      maintenanceWindow: {
+        enabled: maintenanceWindow.enabled,
+        startAt: maintenanceWindow.startAt ? parseDateTime(maintenanceWindow.startAt) : null,
+        endAt: maintenanceWindow.endAt ? parseDateTime(maintenanceWindow.endAt) : null,
+        message: maintenanceWindow.message || null
+      },
+      passwordPolicy: {
+        minLength: passwordPolicy.minLength,
+        requireUppercase: passwordPolicy.requireUppercase,
+        requireNumber: passwordPolicy.requireNumber,
+        requireSpecial: passwordPolicy.requireSpecial,
+        expiryDays: passwordPolicy.expiryDays || null
+      },
+      alertThresholds: {
+        loginFailure: alertThresholds.loginFailure,
+        storageUsagePercent: alertThresholds.storageUsagePercent,
+        jobQueueDelayMinutes: alertThresholds.jobQueueDelayMinutes
+      }
+    }
+    
+    // 只发送有值的字段
+    if (!maintenanceWindow.enabled) {
+      requestData.maintenanceWindow = null
+    }
+    
+    console.log('保存系统设置:', requestData)
+    const response = await settingsAPI.updateSettings(requestData)
+    console.log('保存成功:', response)
+    
+    showMessage('设置保存成功')
+    
+    // 重新加载设置以获取最新值
+    await loadSettings()
+  } catch (err) {
+    console.error('保存系统设置失败:', err)
+    const errorMsg = err?.message || err?.error || '保存失败，请稍后重试'
+    showMessage('保存失败: ' + errorMsg, 'error')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 组件挂载时加载设置
+onMounted(() => {
+  loadSettings()
+})
 </script>
 
 <template>
   <MainLayout>
     <main class="main-content">
-      <!-- 基本设置 -->
-      <section class="card">
-        <h2 class="section-title">基本设置</h2>
-        <div class="form-row">
-          <label class="form-label">平台名称</label>
-          <input 
-            class="form-input" 
-            v-model="basicSettings.platformName"
-            type="text"
-          >
-        </div>
-        <div class="form-row">
-          <label class="form-label">默认学期</label>
-          <select class="form-input form-select" v-model="basicSettings.defaultSemester">
-            <option>春季学期</option>
-            <option>秋季学期</option>
-          </select>
-        </div>
-        <div class="form-row">
-          <label class="form-label">公告</label>
-          <textarea 
-            class="form-input form-textarea" 
-            v-model="basicSettings.announcement"
-            placeholder="输入平台公告..."
-          ></textarea>
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-secondary" @click="resetBasicSettings">重置</button>
-          <button class="btn btn-primary" @click="saveBasicSettings">保存</button>
-        </div>
-      </section>
+      <header class="header">
+        <h1>系统设置</h1>
+        <button class="btn btn-primary" @click="saveSettings" :disabled="loading || saving">
+          {{ saving ? '保存中...' : '保存所有设置' }}
+        </button>
+      </header>
 
-      <!-- 设置网格 -->
-      <section class="settings-grid">
-        <!-- 安全设置 -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">安全设置</div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">强密码策略</label>
-            <div class="switch">
-              <input 
-                type="checkbox" 
-                v-model="securitySettings.strongPassword"
-              >
-              <span class="desc">要求包含数字与特殊字符</span>
-            </div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">两步验证</label>
-            <div class="switch">
-              <input 
-                type="checkbox" 
-                v-model="securitySettings.twoFactorAuth"
-              >
-              <span class="desc">登录时短信验证码</span>
-            </div>
-          </div>
-          <div class="form-row">
-            <label class="form-label">会话超时</label>
-            <select class="form-input form-select" v-model="securitySettings.sessionTimeout">
-              <option>30分钟</option>
-              <option>1小时</option>
-              <option>2小时</option>
-            </select>
-          </div>
-        </div>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>正在加载系统设置...</p>
+      </div>
 
-        <!-- 通知设置 -->
-        <div class="card">
+      <!-- 设置内容 -->
+      <div v-else>
+        <!-- 维护窗口设置 -->
+        <section class="card">
           <div class="card-header">
-            <div class="card-title">通知设置</div>
+            <div class="card-title">维护窗口</div>
           </div>
           <div class="form-row">
-            <label class="form-label">系统通知</label>
+            <label class="form-label">启用维护模式</label>
             <div class="switch">
               <input 
                 type="checkbox" 
-                v-model="notificationSettings.systemNotification"
+                v-model="maintenanceWindow.enabled"
               >
-              <span class="desc">接收系统更新通知</span>
+              <span class="desc">启用后系统将进入维护模式</span>
             </div>
           </div>
-          <div class="form-row">
-            <label class="form-label">课程审核</label>
-            <div class="switch">
-              <input 
-                type="checkbox" 
-                v-model="notificationSettings.courseReview"
-              >
-              <span class="desc">有新课程提交时提醒</span>
-            </div>
+          <div v-if="maintenanceWindow.enabled" class="form-row">
+            <label class="form-label">维护开始时间</label>
+            <input 
+              class="form-input" 
+              type="datetime-local"
+              v-model="maintenanceWindow.startAt"
+            >
           </div>
-          <div class="form-row">
-            <label class="form-label">异常告警</label>
-            <div class="switch">
-              <input 
-                type="checkbox" 
-                v-model="notificationSettings.alertNotification"
-              >
-              <span class="desc">服务异常自动通知</span>
-            </div>
+          <div v-if="maintenanceWindow.enabled" class="form-row">
+            <label class="form-label">维护结束时间</label>
+            <input 
+              class="form-input" 
+              type="datetime-local"
+              v-model="maintenanceWindow.endAt"
+            >
           </div>
-        </div>
+          <div v-if="maintenanceWindow.enabled" class="form-row">
+            <label class="form-label">维护公告</label>
+            <textarea 
+              class="form-input form-textarea" 
+              v-model="maintenanceWindow.message"
+              placeholder="输入维护公告信息（最多512字符）"
+              maxlength="512"
+            ></textarea>
+            <span class="char-count">{{ maintenanceWindow.message.length }}/512</span>
+          </div>
+        </section>
 
-        <!-- 外观设置 -->
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">外观设置</div>
+        <!-- 设置网格 -->
+        <section class="settings-grid">
+          <!-- 密码策略设置 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">密码策略</div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">最小长度</label>
+              <input 
+                class="form-input" 
+                type="number"
+                v-model.number="passwordPolicy.minLength"
+                min="6"
+                max="128"
+              >
+              <span class="form-hint">6-128 字符</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label">要求大写字母</label>
+              <div class="switch">
+                <input 
+                  type="checkbox" 
+                  v-model="passwordPolicy.requireUppercase"
+                >
+                <span class="desc">密码必须包含大写字母</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">要求数字</label>
+              <div class="switch">
+                <input 
+                  type="checkbox" 
+                  v-model="passwordPolicy.requireNumber"
+                >
+                <span class="desc">密码必须包含数字</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">要求特殊字符</label>
+              <div class="switch">
+                <input 
+                  type="checkbox" 
+                  v-model="passwordPolicy.requireSpecial"
+                >
+                <span class="desc">密码必须包含特殊字符</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">密码过期天数</label>
+              <input 
+                class="form-input" 
+                type="number"
+                v-model.number="passwordPolicy.expiryDays"
+                min="1"
+                max="365"
+                placeholder="留空表示永不过期"
+              >
+              <span class="form-hint">1-365 天，留空表示永不过期</span>
+            </div>
           </div>
-          <div class="form-row">
-            <label class="form-label">主题色</label>
-            <select class="form-input form-select" v-model="appearanceSettings.themeColor">
-              <option>默认（蓝）</option>
-              <option>紫色</option>
-              <option>绿色</option>
-            </select>
+
+          <!-- 告警阈值设置 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">告警阈值</div>
+            </div>
+            <div class="form-row">
+              <label class="form-label">登录失败阈值</label>
+              <input 
+                class="form-input" 
+                type="number"
+                v-model.number="alertThresholds.loginFailure"
+                min="1"
+                max="100"
+              >
+              <span class="form-hint">1-100 次失败后触发告警</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label">存储使用率阈值</label>
+              <input 
+                class="form-input" 
+                type="number"
+                v-model.number="alertThresholds.storageUsagePercent"
+                min="1"
+                max="100"
+              >
+              <span class="form-hint">1-100%，超过此值触发告警</span>
+            </div>
+            <div class="form-row">
+              <label class="form-label">任务队列延迟阈值</label>
+              <input 
+                class="form-input" 
+                type="number"
+                v-model.number="alertThresholds.jobQueueDelayMinutes"
+                min="1"
+                max="1440"
+              >
+              <span class="form-hint">1-1440 分钟，超过此值触发告警</span>
+            </div>
           </div>
-          <div class="form-row">
-            <label class="form-label">圆角大小</label>
-            <select class="form-input form-select" v-model="appearanceSettings.borderRadius">
-              <option>默认</option>
-              <option>较小</option>
-              <option>较大</option>
-            </select>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <!-- 消息提示 -->
-      <div v-if="message" class="message-toast">{{ message }}</div>
+      <div v-if="message" :class="['message-toast', messageType === 'error' ? 'message-error' : 'message-success']">
+        {{ message }}
+      </div>
     </main>
   </MainLayout>
 </template>
@@ -350,18 +483,81 @@ const showMessage = (text) => {
   transform: translateY(-1px);
 }
 
+.header {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #d1d1d6;
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #86868b;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #86868b;
+  margin-top: 4px;
+}
+
+.char-count {
+  font-size: 12px;
+  color: #86868b;
+  text-align: right;
+  margin-top: 4px;
+}
+
 /* 消息提示 */
 .message-toast {
   position: fixed;
   top: 20px;
   right: 20px;
-  background-color: #34c759;
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   animation: slideIn 0.3s ease-out;
+}
+
+.message-success {
+  background-color: #34c759;
+}
+
+.message-error {
+  background-color: #ff3b30;
 }
 
 @keyframes slideIn {

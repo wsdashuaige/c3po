@@ -2,6 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '../components/layout/MainLayout.vue'
+import { dashboardAPI } from '../services/api.js'
+import { mockAPI } from '../services/mockData.js'
 // 导入ECharts组件和配置
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -25,95 +27,92 @@ use([
 ])
 
 const router = useRouter()
+const useMock = false // 临时对接后端接口，必要时切换为true以使用mock数据
+const loading = ref(true)
+const error = ref('')
 
 // 统计卡片数据
-const statistics = ref([
-  {
-    label: '总用户数',
-    value: '2,456',
-    class: 'users'
-  },
-  {
-    label: '教师数量',
-    value: '128',
-    class: 'teachers'
-  },
-  {
-    label: '课程总数',
-    value: '89',
-    class: 'courses'
-  },
-  {
-    label: '活跃用户',
-    value: '1,892',
-    class: 'active'
-  }
-])
+const statistics = ref([])
 
 // 最近活动数据
-const recentActivities = ref([
-  {
-    icon: 'user',
-    title: '新用户注册',
-    time: '张三同学注册了账号 • 5分钟前'
-  },
-  {
-    icon: 'course',
-    title: '课程审核通过',
-    time: '《人工智能基础》课程已审核通过 • 1小时前'
-  },
-  {
-    icon: 'user',
-    title: '教师账号激活',
-    time: '李教授账号已激活 • 2小时前'
-  },
-  {
-    icon: 'system',
-    title: '系统维护完成',
-    time: '数据库优化维护已完成 • 3小时前'
-  },
-  {
-    icon: 'course',
-    title: '课程内容更新',
-    time: '《数据结构与算法》课程资料已更新 • 1天前'
-  }
-])
+const recentActivities = ref([])
 
 // 待处理任务数据
-const pendingTasks = ref([
-  {
-    icon: '📋',
-    title: '用户审核',
-    info: '12个新用户待审核',
-    actionText: '处理',
-    actionClass: 'btn-primary',
-    type: 'user-review'
-  },
-  {
-    icon: '📚',
-    title: '课程审核',
-    info: '5门课程待审核',
-    actionText: '审核',
-    actionClass: 'btn-primary',
-    type: 'course-review'
-  },
-  {
-    icon: '⚠️',
-    title: '系统告警',
-    info: '3个系统告警需要处理',
-    actionText: '查看',
-    actionClass: 'btn-warning',
-    type: 'system-alert'
-  },
-  {
-    icon: '📊',
-    title: '数据备份',
-    info: '本周数据备份任务',
-    actionText: '备份',
-    actionClass: 'btn-secondary',
-    type: 'data-backup'
+const pendingTasks = ref([])
+
+// 格式化数字显示
+const formatNumber = (num) => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+// 从API获取仪表盘数据
+const fetchDashboardData = async () => {
+  loading.value = true
+  error.value = ''
+  
+  try {
+    if (useMock) {
+      const dashboardStatsApi = mockAPI.getDashboardStats
+      const recentActivitiesApi = mockAPI.getRecentActivities
+      const pendingTasksApi = mockAPI.getPendingTasks
+      const [statsResponse, activitiesResponse, tasksResponse] = await Promise.all([
+        dashboardStatsApi(),
+        recentActivitiesApi(),
+        pendingTasksApi()
+      ])
+      applyMockStats(statsResponse)
+      applyMockActivities(activitiesResponse)
+      applyMockTasks(tasksResponse)
+    } else {
+      const overviewResponse = await dashboardAPI.getDashboardStats()
+      applyOverviewData(overviewResponse || {})
+    }
+  } catch (err) {
+    console.error('获取仪表盘数据失败:', err)
+    error.value = '获取数据失败，请稍后重试'
+    
+    // 设置默认数据以保证UI正常显示
+    setDefaultData()
+  } finally {
+    loading.value = false
   }
-])
+}
+
+// 设置默认数据
+const setDefaultData = () => {
+  statistics.value = [
+    { label: '总用户数', value: '0', class: 'users' },
+    { label: '教师数量', value: '0', class: 'teachers' },
+    { label: '课程总数', value: '0', class: 'courses' },
+    { label: '活跃用户', value: '0', class: 'active' }
+  ]
+  
+  recentActivities.value = [
+    { icon: 'system', title: '暂无数据', time: '请稍后刷新' }
+  ]
+  
+  pendingTasks.value = [
+    { icon: '📝', title: '暂无待处理任务', info: '', actionText: '刷新', actionClass: 'btn-secondary', type: 'refresh' }
+  ]
+}
+
+// 格式化时间显示
+const formatTimeAgo = (dateString) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffInMs = now - date
+  const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+  const diffInHours = Math.floor(diffInMinutes / 60)
+  const diffInDays = Math.floor(diffInHours / 24)
+  
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes}分钟前`
+  } else if (diffInHours < 24) {
+    return `${diffInHours}小时前`
+  } else {
+    return `${diffInDays}天前`
+  }
+}
 
 // 获取活动图标
 const getActivityIcon = (iconType) => {
@@ -167,6 +166,12 @@ const getTaskModalContent = (task) => {
       description: '本周数据备份任务，建议立即执行备份操作以确保数据安全。',
       confirmText: '立即备份',
       cancelText: '稍后备份'
+    },
+    'approval': {
+      title: '审批待办',
+      description: '存在待审批的入会或课程申请，请尽快处理。',
+      confirmText: '前往审批',
+      cancelText: '稍后处理'
     }
   }
   return contentMap[task.type] || {
@@ -183,16 +188,24 @@ const confirmTask = () => {
     // 根据任务类型执行不同的操作
     switch (currentTask.value.type) {
       case 'user-review':
+      case 'member':
         // 跳转到用户管理页面
         closeModal()
-        router.push('/users')
+        router.push('/admin/users')
         break
       case 'course-review':
+      case 'course':
         // 跳转到课程管理页面
         closeModal()
-        router.push('/courses')
+        router.push('/admin/courses')
+        break
+      case 'approval':
+        // 跳转到课程审核页面
+        closeModal()
+        router.push('/admin/courses')
         break
       case 'system-alert':
+      case 'report':
         // 实际项目中这里会跳转到系统告警页面
         alert('正在查看系统告警详情...')
         closeModal()
@@ -201,6 +214,11 @@ const confirmTask = () => {
         // 实际项目中这里会执行备份操作
         alert('正在执行数据备份...')
         closeModal()
+        break
+      case 'refresh':
+        // 刷新数据
+        closeModal()
+        fetchDashboardData()
         break
       default:
         alert(`正在处理：${currentTask.value.title}`)
@@ -305,7 +323,9 @@ const platformUsageData = ref({
 })
 
 // 数字动画效果
-onMounted(() => {
+const animateNumbers = () => {
+  if (loading.value) return
+  
   const statNumbers = document.querySelectorAll('.stat-number')
   statNumbers.forEach(stat => {
     const finalValue = stat.textContent
@@ -326,7 +346,150 @@ onMounted(() => {
       }, 30)
     }, 500)
   })
+}
+
+// 组件挂载时获取数据
+onMounted(async () => {
+  await fetchDashboardData()
+  animateNumbers()
 })
+
+const applyMockStats = (statsResponse) => {
+  statistics.value = [
+    {
+      label: '总用户数',
+      value: formatNumber(statsResponse.totalMembers || 0),
+      class: 'users'
+    },
+    {
+      label: '教师数量',
+      value: formatNumber(statsResponse.totalTeachers || 0),
+      class: 'teachers'
+    },
+    {
+      label: '课程总数',
+      value: formatNumber(statsResponse.totalCourses || 0),
+      class: 'courses'
+    },
+    {
+      label: '活跃用户',
+      value: formatNumber(statsResponse.activeUsers || 0),
+      class: 'active'
+    }
+  ]
+}
+
+const applyMockActivities = (activitiesResponse) => {
+  recentActivities.value = (activitiesResponse || []).map(activity => {
+    let iconType = 'system'
+    if (activity.type === 'activity') iconType = 'course'
+    if (activity.type === 'achievement' || activity.type === 'member') iconType = 'user'
+
+    return {
+      icon: iconType,
+      title: activity.title,
+      time: `${activity.title} • ${formatTimeAgo(activity.date)}`
+    }
+  })
+}
+
+const applyMockTasks = (tasksResponse) => {
+  pendingTasks.value = (tasksResponse || []).map(task => {
+    let icon = '📝'
+    let actionClass = 'btn-primary'
+
+    if (task.type === 'member' || task.type === 'user-review') {
+      icon = '📋'
+      actionClass = 'btn-primary'
+    } else if (task.type === 'course' || task.type === 'course-review') {
+      icon = '📚'
+      actionClass = 'btn-primary'
+    } else if (task.type === 'report' || task.type === 'system-alert') {
+      icon = '⚠️'
+      actionClass = 'btn-warning'
+    } else if (task.type === 'data-backup') {
+      icon = '📊'
+      actionClass = 'btn-secondary'
+    }
+
+    return {
+      ...task,
+      icon,
+      actionText: '处理',
+      actionClass
+    }
+  })
+}
+
+const applyOverviewData = (overview) => {
+  const {
+    totalMembers = 0,
+    activeMembers = 0,
+    totalActivities = 0,
+    pendingApplications = 0,
+    approvalRate = 0
+  } = overview
+
+  statistics.value = [
+    { label: '总成员数', value: formatNumber(totalMembers), class: 'users' },
+    { label: '活跃成员', value: formatNumber(activeMembers), class: 'active' },
+    { label: '活动总数', value: formatNumber(totalActivities), class: 'courses' },
+    { label: '待审批申请', value: formatNumber(pendingApplications), class: 'teachers' }
+  ]
+
+  recentActivities.value = [
+    {
+      icon: 'course',
+      title: '活动总览',
+      time: `累计 ${totalActivities} 场活动`
+    },
+    {
+      icon: 'user',
+      title: '活跃成员',
+      time: `${activeMembers} 名成员近期活跃`
+    },
+    {
+      icon: 'system',
+      title: '审批通过率',
+      time: `当前通过率 ${formatPercent(approvalRate)}`
+    }
+  ]
+
+  pendingTasks.value = [
+    {
+      id: 'pending-applications',
+      icon: '📋',
+      title: '待审批申请',
+      info: `共有 ${pendingApplications} 条申请待处理`,
+      actionText: '前往审批',
+      actionClass: 'btn-primary',
+      type: 'approval'
+    },
+    {
+      id: 'activity-report',
+      icon: '📚',
+      title: '活动数据总览',
+      info: `活动数量 ${totalActivities}，请关注执行情况`,
+      actionText: '查看',
+      actionClass: 'btn-secondary',
+      type: 'course'
+    },
+    {
+      id: 'member-trend',
+      icon: '👥',
+      title: '成员活跃趋势',
+      info: `${activeMembers}/${totalMembers} 成员活跃`,
+      actionText: '查看趋势',
+      actionClass: 'btn-secondary',
+      type: 'member'
+    }
+  ]
+}
+
+const formatPercent = (value) => {
+  const percent = (Number(value) || 0) * 100
+  return `${percent.toFixed(1)}%`
+}
 </script>
 
 <template>
@@ -341,22 +504,36 @@ onMounted(() => {
           </div>
         </div>
       </header>
+      
+      <!-- 错误提示 -->
+      <div v-if="error" class="error-message">
+        {{ error }}
+        <button class="btn btn-sm btn-primary" @click="fetchDashboardData">重试</button>
+      </div>
 
       <div class="stats-grid">
         <div 
           v-for="(stat, index) in statistics" 
           :key="index"
           class="stat-card"
+          style="position: relative;"
         >
-          <div class="stat-number" :class="stat.class">{{ stat.value }}</div>
+          <div v-if="loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+          </div>
+          <div class="stat-number" :class="stat.class">{{ loading ? '加载中...' : stat.value }}</div>
           <div class="stat-label">{{ stat.label }}</div>
         </div>
       </div>
 
       <div class="overview-grid">
-        <div class="recent-activities">
+        <div class="recent-activities" style="position: relative;">
+          <div v-if="loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+          </div>
           <h3 class="section-title">最近活动</h3>
-          <div 
+          <div v-if="loading" class="loading-placeholder">加载中...</div>
+          <div v-else
             v-for="(activity, index) in recentActivities" 
             :key="index"
             class="activity-item"
@@ -371,9 +548,13 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="pending-tasks">
+        <div class="pending-tasks" style="position: relative;">
+          <div v-if="loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+          </div>
           <h3 class="section-title">待处理任务</h3>
-          <div 
+          <div v-if="loading" class="loading-placeholder">加载中...</div>
+          <div v-else
             v-for="(task, index) in pendingTasks" 
             :key="index"
             class="task-item"
@@ -396,9 +577,13 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="chart-container">
+      <div class="chart-container" style="position: relative;">
+        <div v-if="loading" class="loading-overlay">
+          <div class="loading-spinner"></div>
+        </div>
         <h3 class="chart-title">平台使用统计</h3>
-        <v-chart class="chart-content" :option="platformUsageData" autoresize />
+        <div v-if="loading" class="loading-placeholder" style="text-align: center; padding: 40px; height: 300px; display: flex; align-items: center; justify-content: center;">加载中...</div>
+        <v-chart v-else class="chart-content" :option="platformUsageData" autoresize />
       </div>
     </main>
 
@@ -862,6 +1047,48 @@ onMounted(() => {
   margin: 0;
   color: #1d1d1f;
   font-size: 14px;
+}
+
+/* 错误消息样式 */
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ffcdd2;
+}
+
+/* 加载状态样式 */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .modal-footer {
