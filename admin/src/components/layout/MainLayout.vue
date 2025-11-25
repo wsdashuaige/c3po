@@ -26,37 +26,37 @@ const menuItems = [
     id: 'dashboard',
     title: '仪表板',
     icon: '📊',
-    path: '/dashboard'
+    path: '/admin/dashboard'
   },
   {
     id: 'users',
     title: '用户管理',
     icon: '👥',
-    path: '/users'
+    path: '/admin/users'
   },
   {
     id: 'courses',
     title: '课程管理',
     icon: '📚',
-    path: '/courses'
+    path: '/admin/courses'
   },
   {
     id: 'statistics',
     title: '统计分析',
     icon: '📈',
-    path: '/statistics'
+    path: '/admin/statistics'
   },
   {
     id: 'settings',
     title: '系统设置',
     icon: '⚙️',
-    path: '/settings'
+    path: '/admin/settings'
   },
   {
     id: 'profile',
     title: '个人中心',
     icon: '👤',
-    path: '/profile'
+    path: '/admin/profile'
   },
   {
     id: 'logout',
@@ -77,7 +77,7 @@ const logout = () => {
   localStorage.removeItem('username')
   localStorage.removeItem('isLoggedIn')
   // 跳转到登录页
-  router.push('/')
+  router.push('/admin/login')
 }
 
 const handleResize = () => {
@@ -90,7 +90,7 @@ const handleResize = () => {
 }
 
 const navigateToProfile = () => {
-  router.push('/profile')
+  router.push('/admin/profile')
 }
 </script>
 

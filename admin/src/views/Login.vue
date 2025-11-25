@@ -1,12 +1,16 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { authAPI } from '../services/api.js'
+import { mockAPI } from '../services/mockData.js'
 
 const router = useRouter()
 const username = ref('')
 const password = ref('')
 const verificationCode = ref('')
 const errorMessage = ref('')
+const loading = ref(false)
+const useMock = false // 使用真实后端API
 
 // 生成随机验证码
 const generateVerificationCode = () => {
@@ -24,12 +28,9 @@ const refreshCode = () => {
   currentCode.value = generateVerificationCode()
 }
 
-// 返回首页
-const goToHome = () => {
-  router.push('/home')
-}
+// 已移除返回首页功能
 
-const handleLogin = () => {
+const handleLogin = async () => {
   // 简单的表单验证
   if (!username.value.trim() || !password.value.trim() || !verificationCode.value.trim()) {
     errorMessage.value = '请填写所有必填字段'
@@ -43,23 +44,55 @@ const handleLogin = () => {
     return
   }
 
-  // 固定管理员账号密码验证
-  if (username.value === 'admin' && password.value === 'admin123') {
-    // 保存登录状态
-    localStorage.setItem('token', 'admin_token')
-    errorMessage.value = ''
-    router.push('/dashboard')
-  } else {
-    errorMessage.value = '用户名或密码错误'
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    let response
+    if (useMock) {
+      // 使用 mock API
+      response = await mockAPI.login({ username: username.value, password: password.value })
+      localStorage.setItem('token', response.token)
+      localStorage.setItem('user', JSON.stringify(response.user))
+    } else {
+      // 使用真实后端API
+      // 后端期望的字段名是 identifier，不是 username
+      const credentials = { identifier: username.value, password: password.value }
+      response = await authAPI.login(credentials)
+      
+      // 后端返回的字段是 accessToken，不是 token
+      if (response.accessToken) {
+        localStorage.setItem('token', response.accessToken)
+        
+        // 获取用户信息
+        try {
+          const userResponse = await authAPI.getProfile()
+          localStorage.setItem('user', JSON.stringify(userResponse))
+        } catch (profileError) {
+          // 如果获取用户信息失败，至少保存基本信息
+          console.warn('获取用户信息失败:', profileError)
+          localStorage.setItem('user', JSON.stringify({ username: username.value }))
+        }
+      } else {
+        throw new Error('登录响应中缺少 accessToken')
+      }
+    }
+    
+    // 登录成功后跳转到仪表盘
+    router.push('/admin/dashboard')
+  } catch (error) {
+    // 处理登录失败
+    console.error('登录错误:', error)
+    errorMessage.value = error.message || error.error || '登录失败，请稍后重试'
+    refreshCode()
+  } finally {
+    loading.value = false
   }
 }
 </script>
 
 <template>
   <div class="login-page">
-    <a href="#" class="back-link" @click.prevent="goToHome">
-      <span>←</span> 返回首页
-    </a>
     
     <div class="login-container">
       <div class="login-header">
@@ -122,7 +155,10 @@ const handleLogin = () => {
           {{ errorMessage }}
         </div>
         
-        <button type="submit" class="btn btn-danger w-full">登录</button>
+        <button type="submit" class="btn btn-danger w-full" :disabled="loading">
+          <span v-if="loading">登录中...</span>
+          <span v-else>登录</span>
+        </button>
       </form>
       
       <div class="terms-notice">
@@ -140,24 +176,6 @@ const handleLogin = () => {
   align-items: center;
   justify-content: center;
   position: relative;
-}
-
-.back-link {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  color: white;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  z-index: 10;
-  transition: opacity 0.2s ease;
-}
-
-.back-link:hover {
-  opacity: 0.8;
 }
 
 .login-container {
@@ -341,12 +359,7 @@ const handleLogin = () => {
   .login-container {
     padding: 24px 20px;
   }
-  
-  .back-link {
-    top: 16px;
-    left: 16px;
-  }
-  
+
   .login-title {
     font-size: 20px;
   }

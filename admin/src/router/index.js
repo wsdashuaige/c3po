@@ -19,68 +19,84 @@ const isAuthenticated = () => {
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    redirect: '/admin/login'
   },
   {
-    path: '/login',
+    path: '/admin/home',
+    name: 'Home',
+    component: Home,
+    meta: {
+      requiresAuth: false,
+      title: '首页'
+    }
+  },
+  {
+    path: '/admin/login',
     name: 'Login',
     component: Login,
     meta: {
-      requiresAuth: false
+      requiresAuth: false,
+      title: '登录'
     }
   },
   {
-    path: '/dashboard',
+    path: '/admin/dashboard',
     name: 'Dashboard',
     component: Dashboard,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      title: '仪表板'
     }
   },
   {
-    path: '/users',
+    path: '/admin/users',
     name: 'Users',
     component: Users,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      title: '用户管理'
     }
   },
   {
-    path: '/courses',
+    path: '/admin/courses',
     name: 'Courses',
     component: Courses,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      title: '课程管理'
     }
   },
   {
-    path: '/statistics',
+    path: '/admin/statistics',
     name: 'Statistics',
     component: Statistics,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      title: '统计分析'
     }
   },
   {
-    path: '/settings',
+    path: '/admin/settings',
     name: 'Settings',
     component: Settings,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      title: '系统设置'
     }
   },
   {
-    path: '/profile',
+    path: '/admin/profile',
     name: 'Profile',
     component: Profile,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      title: '个人中心'
     }
   },
   // 捕获所有未匹配的路由，重定向到登录页
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/login'
+    redirect: '/admin/login'
   }
 ]
 
@@ -89,8 +105,16 @@ const router = createRouter({
   routes
 })
 
-// 全局前置守卫，检查是否需要认证
+// 全局前置守卫，检查是否需要认证并设置页面标题
 router.beforeEach((to, from, next) => {
+  // 设置页面标题
+  if (to.meta.title) {
+    document.title = `${to.meta.title} - 管理系统`
+  } else {
+    document.title = '管理系统'
+  }
+  
+  // 认证检查
   if (to.meta.requiresAuth && !isAuthenticated()) {
     // 需要认证但未登录，重定向到登录页
     next({ name: 'Login' })

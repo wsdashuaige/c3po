@@ -1,11 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import MainLayout from '../components/layout/MainLayout.vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart, BarChart, PieChart } from 'echarts/charts'
 import { TitleComponent, TooltipComponent, GridComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
+import { dashboardAPI, userAPI, courseAPI } from '../services/api'
 
 // 注册必要的组件
 use([
@@ -22,22 +23,12 @@ use([
 // 过滤器选项
 const timeFilter = ref('最近7天')
 const moduleFilter = ref('全部模块')
+const loading = ref(false)
+const error = ref(null)
 
 // KPI 数据
-const kpiData = ref([
-  {
-    value: '2,456',
-    label: '活跃用户'
-  },
-  {
-    value: '89',
-    label: '新增课程'
-  },
-  {
-    value: '1,203',
-    label: '提交作业'
-  }
-])
+const kpiData = ref([])
+const dashboardData = ref({})
 
 // 图表数据
 const userGrowthData = {
@@ -157,12 +148,244 @@ const homeworkTrendData = {
 
 // 应用过滤器
 const applyFilters = () => {
-  // 在实际应用中，这里会根据过滤器重新加载数据
-  console.log('应用过滤器', {
-    timeFilter: timeFilter.value,
-    moduleFilter: moduleFilter.value
-  })
+  loadDashboardData()
 }
+
+// 导出统计数据
+const exportStatistics = () => {
+  try {
+    const dataToExport = [
+      {
+        '指标': '活跃用户',
+        '数值': kpiData.value[0]?.value || '0'
+      },
+      {
+        '指标': '新增课程（30天）',
+        '数值': kpiData.value[1]?.value || '0'
+      },
+      {
+        '指标': '已发布课程',
+        '数值': kpiData.value[2]?.value || '0'
+      },
+      {
+        '指标': '总用户数',
+        '数值': dashboardData.value?.totalUsers || '0'
+      },
+      {
+        '指标': '学生数',
+        '数值': dashboardData.value?.studentCount || '0'
+      },
+      {
+        '指标': '教师数',
+        '数值': dashboardData.value?.teacherCount || '0'
+      },
+      {
+        '指标': '管理员数',
+        '数值': dashboardData.value?.adminCount || '0'
+      },
+      {
+        '指标': '总课程数',
+        '数值': dashboardData.value?.totalCourses || '0'
+      }
+    ]
+    
+    const csvContent = convertToCSV(dataToExport)
+    downloadCSV(csvContent, '统计数据.csv')
+  } catch (err) {
+    alert('导出失败，请重试')
+    console.error('导出统计数据失败:', err)
+  }
+}
+
+// 转换为CSV格式
+const convertToCSV = (data) => {
+  if (data.length === 0) return ''
+  
+  const headers = Object.keys(data[0])
+  const csvHeaders = headers.join(',')
+  const csvRows = data.map(row => 
+    headers.map(header => {
+      const value = row[header]
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+        return `"${value.replace(/"/g, '""')}"`
+      }
+      return value
+    }).join(',')
+  )
+  
+  return [csvHeaders, ...csvRows].join('\n')
+}
+
+// 下载CSV文件
+const downloadCSV = (content, filename) => {
+  const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } else {
+    const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(content)
+    window.open(url)
+  }
+}
+
+// 加载统计数据
+const loadDashboardData = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    // 获取用户列表（用于统计用户数据）
+    const usersResponse = await userAPI.getUsers({ page: 1, pageSize: 1000 })
+    const users = Array.isArray(usersResponse?.data) ? usersResponse.data : []
+    const totalUsers = usersResponse?.meta?.total || users.length
+    
+    // 获取课程列表（用于统计课程数据）
+    const coursesResponse = await courseAPI.getCourses({ page: 1, pageSize: 1000 })
+    const courses = Array.isArray(coursesResponse?.data) ? coursesResponse.data : []
+    const totalCourses = coursesResponse?.meta?.total || courses.length
+    
+    // 统计活跃用户（状态为 ACTIVE 的用户）
+    const activeUsers = users.filter(u => u.status === 'ACTIVE').length
+    
+    // 统计各角色用户数量
+    const studentCount = users.filter(u => u.role === 'STUDENT').length
+    const teacherCount = users.filter(u => u.role === 'TEACHER').length
+    const adminCount = users.filter(u => u.role === 'ADMIN').length
+    
+    // 统计最近创建的课程（最近30天）
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const recentCourses = courses.filter(c => {
+      if (!c.createdAt) return false
+      const createdDate = new Date(c.createdAt)
+      return createdDate >= thirtyDaysAgo
+    }).length
+    
+    // 统计已发布的课程
+    const publishedCourses = courses.filter(c => c.status === 'PUBLISHED').length
+    
+    // 更新KPI数据（使用实际统计数据）
+    kpiData.value = [
+      {
+        value: formatNumber(activeUsers),
+        label: '活跃用户'
+      },
+      {
+        value: formatNumber(recentCourses),
+        label: '新增课程（30天）'
+      },
+      {
+        value: formatNumber(publishedCourses),
+        label: '已发布课程'
+      }
+    ]
+    
+    // 更新图表数据
+    updateChartData({
+      totalUsers,
+      activeUsers,
+      studentCount,
+      teacherCount,
+      adminCount,
+      totalCourses,
+      publishedCourses,
+      courses
+    })
+    
+    dashboardData.value = {
+      totalUsers,
+      activeUsers,
+      studentCount,
+      teacherCount,
+      adminCount,
+      totalCourses,
+      publishedCourses,
+      courses
+    }
+  } catch (err) {
+    error.value = '加载统计数据失败'
+    console.error('加载统计数据失败:', err)
+    // 使用默认数据
+    setDefaultData()
+  } finally {
+    loading.value = false
+  }
+}
+
+// 格式化数字
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K'
+  }
+  return num.toString()
+}
+
+// 更新图表数据
+const updateChartData = (data) => {
+  // 用户角色分布饼图
+  if (data?.studentCount !== undefined) {
+    userRoleData.series[0].data = [
+      { value: data.studentCount || 0, name: '学生' },
+      { value: data.teacherCount || 0, name: '教师' },
+      { value: data.adminCount || 0, name: '管理员' }
+    ]
+  }
+  
+  // 课程访问量 TOP10（使用课程名称和选课人数）
+  if (data?.courses && Array.isArray(data.courses)) {
+    const topCourses = data.courses
+      .filter(c => c.metrics?.enrolledCount > 0)
+      .sort((a, b) => (b.metrics?.enrolledCount || 0) - (a.metrics?.enrolledCount || 0))
+      .slice(0, 10)
+    
+    if (topCourses.length > 0) {
+      courseVisitData.yAxis.data = topCourses.map(c => c.name || '未命名课程')
+      courseVisitData.series[0].data = topCourses.map(c => c.metrics?.enrolledCount || 0)
+    } else {
+      // 如果没有选课数据，显示所有课程
+      const allCourses = data.courses.slice(0, 10)
+      courseVisitData.yAxis.data = allCourses.map(c => c.name || '未命名课程')
+      courseVisitData.series[0].data = allCourses.map(() => 0)
+    }
+  }
+  
+  // 用户增长趋势（暂时使用模拟数据，因为后端没有提供时间序列数据）
+  // 可以后续根据实际需求从后端获取
+  
+  // 作业提交趋势（暂时使用模拟数据，因为后端没有提供时间序列数据）
+  // 可以后续根据实际需求从后端获取
+}
+
+// 设置默认数据
+const setDefaultData = () => {
+  kpiData.value = [
+    { value: '2,456', label: '活跃用户' },
+    { value: '89', label: '新增课程' },
+    { value: '1,203', label: '提交作业' }
+  ]
+  
+  // 图表使用默认数据
+  userGrowthData.series[0].data = [120, 200, 150, 300, 280, 400, 420, 500, 580, 650, 700, 780]
+  userRoleData.series[0].data = [
+    { value: 4500, name: '学生' },
+    { value: 800, name: '教师' },
+    { value: 200, name: '管理员' },
+    { value: 500, name: '访客' }
+  ]
+  courseVisitData.series[0].data = [3200, 2800, 2600, 2400, 2200, 2000, 1800, 1600, 1400, 1200]
+  homeworkTrendData.series[0].data = [120, 190, 130, 150, 220, 290, 260]
+}
+
+// 组件挂载时加载数据
+onMounted(() => {
+  loadDashboardData()
+})
 </script>
 
 <template>
@@ -184,20 +407,35 @@ const applyFilters = () => {
               <option>作业</option>
             </select>
             <button class="btn btn-primary" @click="applyFilters">应用</button>
+            <button class="btn btn-secondary" @click="exportStatistics" :disabled="loading || kpiData.length === 0">导出数据</button>
           </div>
         </div>
       </header>
 
-      <section class="grid-3">
-        <div 
-          v-for="(kpi, index) in kpiData" 
-          :key="index"
-          class="card kpi"
-        >
-          <div class="value">{{ kpi.value }}</div>
-          <div class="label">{{ kpi.label }}</div>
-        </div>
-      </section>
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>正在加载统计数据...</p>
+      </div>
+      
+      <!-- 错误状态 -->
+      <div v-else-if="error" class="error-container">
+        <p class="error-message">{{ error }}</p>
+        <button class="btn btn-primary" @click="loadDashboardData">重新加载</button>
+      </div>
+      
+      <!-- 数据内容 -->
+      <div v-else>
+        <section class="grid-3">
+          <div 
+            v-for="(kpi, index) in kpiData" 
+            :key="index"
+            class="card kpi"
+          >
+            <div class="value">{{ kpi.value }}</div>
+            <div class="label">{{ kpi.label }}</div>
+          </div>
+        </section>
 
       <section class="grid" style="grid-template-columns: 2fr 1fr; margin-top: 32px; gap: 24px;">
         <div class="chart">
@@ -219,7 +457,8 @@ const applyFilters = () => {
           <div class="title">作业提交趋势</div>
           <v-chart class="chart-container" :option="homeworkTrendData" autoresize />
         </div>
-      </section>
+    </section>
+      </div>
     </main>
   </MainLayout>
 </template>
@@ -374,6 +613,40 @@ const applyFilters = () => {
     height: 280px;
     width: 100%;
   }
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #86868b;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007aff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.error-message {
+  color: #ff3b30;
+  margin-bottom: 16px;
+}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
