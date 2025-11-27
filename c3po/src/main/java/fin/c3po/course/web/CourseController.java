@@ -17,6 +17,7 @@ import fin.c3po.course.dto.CourseResponse;
 import fin.c3po.course.dto.CreateCourseRequest;
 import fin.c3po.course.dto.StudentCourseResponse;
 import fin.c3po.course.dto.UpdateCourseRequest;
+import fin.c3po.course.dto.CourseStudentResponse;
 import fin.c3po.selection.CourseSelection;
 import fin.c3po.selection.CourseSelectionRepository;
 import fin.c3po.selection.SelectionStatus;
@@ -27,6 +28,7 @@ import fin.c3po.submission.Submission;
 import fin.c3po.submission.SubmissionRepository;
 import fin.c3po.submission.SubmissionStatus;
 import fin.c3po.user.UserAccount;
+import fin.c3po.user.UserAccountRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -77,6 +79,7 @@ public class CourseController {
     private final CourseSelectionRepository courseSelectionRepository;
     private final SubmissionRepository submissionRepository;
     private final ApprovalRequestRepository approvalRequestRepository;
+    private final UserAccountRepository userAccountRepository;
     private final ObjectMapper objectMapper;
 
     @GetMapping("/courses")
@@ -125,6 +128,38 @@ public class CourseController {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         return ApiResponse.success(toCourseResponse(course));
+    }
+
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @GetMapping("/courses/{courseId}/students")
+    public ApiResponse<List<CourseStudentResponse>> getCourseStudents(
+            @PathVariable UUID courseId,
+            @AuthenticationPrincipal UserAccount currentUser) {
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+
+        if (!currentUser.getRole().equals(fin.c3po.user.UserRole.ADMIN)
+                && !course.getTeacherId().equals(currentUser.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed to view students for this course");
+        }
+
+        List<CourseSelection> selections = courseSelectionRepository.findByCourseId(courseId);
+        List<CourseStudentResponse> responses = new ArrayList<>();
+
+        for (CourseSelection selection : selections) {
+            userAccountRepository.findById(selection.getStudentId()).ifPresent(student -> {
+                responses.add(CourseStudentResponse.builder()
+                        .studentId(student.getId())
+                        .username(student.getUsername())
+                        .email(student.getEmail())
+                        .status(selection.getStatus())
+                        .enrolledAt(selection.getSelectedAt())
+                        .build());
+            });
+        }
+
+        return ApiResponse.success(responses);
     }
 
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
@@ -337,7 +372,8 @@ public class CourseController {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
 
-        List<CourseSelection> enrolledSelections = courseSelectionRepository.findByCourseIdAndStatus(courseId, SelectionStatus.ENROLLED);
+        List<CourseSelection> enrolledSelections = courseSelectionRepository.findByCourseIdAndStatus(courseId,
+                SelectionStatus.ENROLLED);
         List<UUID> enrolledStudents = enrolledSelections.stream()
                 .map(CourseSelection::getStudentId)
                 .toList();
@@ -473,7 +509,8 @@ public class CourseController {
 
         CourseAnalyticsResponse response = CourseAnalyticsResponse.builder()
                 .completionRate(completionRate)
-                .averageScore(allScores.isEmpty() ? null : round(allScores.stream().mapToDouble(Double::doubleValue).average().orElse(0)))
+                .averageScore(allScores.isEmpty() ? null
+                        : round(allScores.stream().mapToDouble(Double::doubleValue).average().orElse(0)))
                 .medianScore(allScores.isEmpty() ? null : computeMedian(allScores))
                 .enrolledStudents(enrolledCount)
                 .totalAssignments(totalAssignments)
@@ -574,7 +611,8 @@ public class CourseController {
 
     private List<Submission> selectionSubmissions(UUID courseId, UUID studentId) {
         return assignmentRepository.findByCourseId(courseId).stream()
-                .map(assignment -> submissionRepository.findTopByAssignmentIdAndStudentIdOrderBySubmittedAtDesc(assignment.getId(), studentId))
+                .map(assignment -> submissionRepository
+                        .findTopByAssignmentIdAndStudentIdOrderBySubmittedAtDesc(assignment.getId(), studentId))
                 .flatMap(Optional::stream)
                 .toList();
     }
@@ -587,5 +625,3 @@ public class CourseController {
         }
     }
 }
-
-

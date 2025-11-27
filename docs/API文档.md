@@ -562,6 +562,23 @@
   - `404`：当前学生未选该课。
   - `409`：选课状态并非 `ENROLLED`。
 
+#### GET `/api/v1/courses/{courseId}/students`
+- **角色**：`TEACHER`（课程教师） / `ADMIN`。
+- **描述**：获取指定课程的选课学生列表。
+- **响应数据**：`CourseStudentResponse[]`。
+  ```json
+  {
+    "studentId": "uuid",
+    "username": "alice",
+    "email": "alice@example.com",
+    "status": "ENROLLED",
+    "enrolledAt": "2025-11-12T08:00:00Z"
+  }
+  ```
+- **异常**：
+  - `404`：课程不存在。
+  - `403`：非课程教师或管理员。
+
 #### GET `/api/v1/students/{studentId}/courses`
 - **角色**：本人或 `TEACHER` / `ADMIN`。
 - **响应数据**：`StudentCourseResponse[]`，包含选课状态及作业完成情况：
