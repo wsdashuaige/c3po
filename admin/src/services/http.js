@@ -1,7 +1,8 @@
 import axios from 'axios'
 import router from '../router'
+import { createStandardError } from './errorHandler'
 
-const DEFAULT_BASE_URL = 'http://localhost:8080/api/v1'
+const DEFAULT_BASE_URL = '/api/v1'
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL,
@@ -25,9 +26,10 @@ http.interceptors.request.use(
 http.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const { response } = error
+    const standardError = createStandardError(error)
 
-    if (response?.status === 401) {
+    // 处理401未授权错误
+    if (standardError.statusCode === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       if (router.currentRoute.value.name !== 'Login') {
@@ -35,11 +37,7 @@ http.interceptors.response.use(
       }
     }
 
-    if (response?.data) {
-      return Promise.reject(response.data)
-    }
-
-    return Promise.reject(error)
+    return Promise.reject(standardError)
   }
 )
 

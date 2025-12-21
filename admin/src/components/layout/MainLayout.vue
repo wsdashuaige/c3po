@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const isSidebarCollapsed = ref(false)
+const isSidebarOpen = ref(false) // 修改为更直观的命名：侧边栏是否打开
 const isMobile = ref(false)
 const sidebar = ref(null)
 
@@ -16,6 +16,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
 const userInfo = ref({
   name: '管理员',
   avatar: null
@@ -67,8 +68,16 @@ const menuItems = [
   }
 ]
 
+// 切换侧边栏
 const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
+  isSidebarOpen.value = !isSidebarOpen.value
+}
+
+// 点击内容区域关闭侧边栏（移动端）
+const closeSidebarOnContentClick = () => {
+  if (isMobile.value && isSidebarOpen.value) {
+    isSidebarOpen.value = false
+  }
 }
 
 const logout = () => {
@@ -82,16 +91,23 @@ const logout = () => {
 
 const handleResize = () => {
   isMobile.value = window.innerWidth < 768
+  // 在桌面端始终打开侧边栏，移动端默认关闭
   if (isMobile.value) {
-    isSidebarCollapsed.value = true
+    isSidebarOpen.value = false
   } else {
-    isSidebarCollapsed.value = false
+    isSidebarOpen.value = true
   }
 }
 
 const navigateToProfile = () => {
   router.push('/admin/profile')
 }
+
+// 计算属性：侧边栏是否折叠（桌面端）
+const isSidebarCollapsed = computed(() => {
+  // 桌面端根据窗口宽度自动折叠
+  return window.innerWidth < 1024 && !isMobile.value
+})
 </script>
 
 <template>
@@ -99,10 +115,14 @@ const navigateToProfile = () => {
     <!-- 侧边栏 -->
     <aside 
       class="sidebar" 
-      :class="{ collapsed: isSidebarCollapsed }"
+      :class="{ 
+        'sidebar-open': isSidebarOpen,
+        'sidebar-collapsed': isSidebarCollapsed
+      }"
+      ref="sidebar"
     >
       <div class="sidebar-header">
-        <div class="logo" :class="{ collapsed: isSidebarCollapsed }">
+        <div class="logo" :class="{ 'logo-collapsed': isSidebarCollapsed }">
           <span v-if="!isSidebarCollapsed">智能学习平台</span>
           <span v-else>智学</span>
         </div>
@@ -127,7 +147,7 @@ const navigateToProfile = () => {
             }"
           >
             <template v-if="!item.isLogout">
-              <router-link :to="item.path" class="nav-link">
+              <router-link :to="item.path" class="nav-link" @click="closeSidebarOnContentClick">
                 <span class="nav-icon">{{ item.icon }}</span>
                 <span class="nav-title" v-if="!isSidebarCollapsed">{{ item.title }}</span>
               </router-link>
@@ -143,8 +163,21 @@ const navigateToProfile = () => {
       </nav>
     </aside>
     
+    <!-- 遮罩层（移动端侧边栏打开时显示） -->
+    <div 
+      v-if="isMobile && isSidebarOpen" 
+      class="sidebar-overlay" 
+      @click="toggleSidebar"
+    ></div>
+    
     <!-- 主内容区 -->
-    <main class="main-content" :class="{ 'sidebar-collapsed': isSidebarCollapsed }">
+    <main 
+      class="main-content" 
+      :class="{ 
+        'sidebar-collapsed': isSidebarCollapsed,
+        'sidebar-open': isSidebarOpen
+      }"
+    >
       <!-- 顶部导航栏 -->
       <header class="top-nav">
         <div class="top-nav-left">
@@ -202,6 +235,7 @@ const navigateToProfile = () => {
   display: flex;
   min-height: 100vh;
   background-color: #f5f5f7;
+  position: relative;
 }
 
 /* 侧边栏样式 */
@@ -209,17 +243,19 @@ const navigateToProfile = () => {
   width: 240px;
   background: white;
   border-right: 1px solid #d2d2d7;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
 }
 
-.sidebar.collapsed {
+/* 侧边栏折叠状态（桌面端） */
+.sidebar.sidebar-collapsed {
   width: 64px;
 }
 
+/* 侧边栏头部 */
 .sidebar-header {
   padding: 20px;
   border-bottom: 1px solid #f2f2f7;
@@ -228,17 +264,19 @@ const navigateToProfile = () => {
   justify-content: space-between;
 }
 
+/* 标志样式 */
 .logo {
   font-size: 20px;
   font-weight: 700;
   color: #0071e3;
-  transition: font-size 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.logo.collapsed {
+.logo.logo-collapsed {
   font-size: 16px;
 }
 
+/* 切换侧边栏按钮 */
 .toggle-sidebar-btn {
   background: none;
   border: none;
@@ -254,6 +292,7 @@ const navigateToProfile = () => {
   background-color: #f5f5f7;
 }
 
+/* 侧边栏导航 */
 .sidebar-nav {
   flex: 1;
   padding: 20px 0;
@@ -320,14 +359,27 @@ const navigateToProfile = () => {
   font-weight: 500;
 }
 
+/* 遮罩层样式 */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  transition: opacity 0.3s ease;
+}
+
 /* 主内容区样式 */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  transition: margin-left 0.3s ease;
+  transition: all 0.3s ease;
 }
 
+/* 侧边栏折叠时的主内容区样式 */
 .main-content.sidebar-collapsed {
   margin-left: 0;
 }
@@ -342,6 +394,7 @@ const navigateToProfile = () => {
   justify-content: space-between;
   padding: 0 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
 .top-nav-left {
@@ -481,29 +534,58 @@ const navigateToProfile = () => {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
+  transition: all 0.3s ease;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
+/* 响应式设计 - 平板端 */
+@media (max-width: 1024px) {
   .sidebar {
-    position: fixed;
-    left: -240px;
-    top: 0;
-    height: 100vh;
-    z-index: 1000;
+    width: 220px;
   }
   
-  .sidebar.collapsed {
-    left: 0;
-    width: 240px;
+  .sidebar.sidebar-collapsed {
+    width: 72px;
   }
   
-  .mobile-menu-btn {
-    display: block;
+  .main-content {
+    margin-left: 220px;
   }
   
-  .top-nav-right .search-box {
-    display: none;
+  .main-content.sidebar-collapsed {
+    margin-left: 72px;
+  }
+  
+  /* 平板端顶部导航 */
+  .top-nav {
+    padding: 14px 20px;
+  }
+  
+  .search-box {
+    width: 200px;
+  }
+}
+
+/* 响应式设计 - 小平板端 */
+@media (max-width: 896px) {
+  .sidebar {
+    width: 200px;
+  }
+  
+  .sidebar.sidebar-collapsed {
+    width: 80px;
+  }
+  
+  .main-content {
+    margin-left: 200px;
+  }
+  
+  .main-content.sidebar-collapsed {
+    margin-left: 80px;
+  }
+  
+  /* 小平板端顶部导航 */
+  .search-box {
+    width: 160px;
   }
   
   .user-info {
@@ -511,13 +593,102 @@ const navigateToProfile = () => {
   }
 }
 
-@media (max-width: 480px) {
-  .top-nav {
-    padding: 0 16px;
+/* 响应式设计 - 移动端 */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -240px;
+    top: 0;
+    height: 100vh;
+    z-index: 1000;
+    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+    width: 280px;
   }
   
+  .sidebar.sidebar-open {
+    left: 0;
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding-left: 0;
+  }
+  
+  /* 移动端侧边栏遮罩 */
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: block;
+  }
+  
+  /* 移动端顶部导航 */
+  .top-nav {
+    padding: 12px 16px;
+    justify-content: space-between;
+  }
+  
+  .top-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .mobile-menu-btn {
+    display: flex;
+  }
+  
+  .breadcrumb {
+    display: none;
+  }
+  
+  .user-profile {
+    padding: 8px;
+  }
+  
+  .user-info {
+    display: none;
+  }
+  
+  .search-box {
+    display: none;
+  }
+  
+  .logout-btn {
+    display: none;
+  }
+}
+
+/* 响应式设计 - 小屏移动端 */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .logo {
+    font-size: 18px;
+  }
+  
+  .logo.logo-collapsed {
+    font-size: 14px;
+  }
+  
+  /* 小屏移动端页面内容 */
   .page-content {
     padding: 16px;
+  }
+  
+  /* 小屏移动端导航项 */
+  .nav-item {
+    margin: 0 8px;
+  }
+  
+  .nav-link {
+    padding: 10px 12px;
   }
 }
 </style>

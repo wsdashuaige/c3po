@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '../services/api.js'
 import { mockAPI } from '../services/mockData.js'
@@ -11,6 +11,13 @@ const verificationCode = ref('')
 const errorMessage = ref('')
 const loading = ref(false)
 const useMock = false // 使用真实后端API
+
+// 表单验证错误状态
+const validationErrors = reactive({
+  username: '',
+  password: '',
+  verificationCode: ''
+})
 
 // 生成随机验证码
 const generateVerificationCode = () => {
@@ -26,21 +33,97 @@ const currentCode = ref(generateVerificationCode())
 
 const refreshCode = () => {
   currentCode.value = generateVerificationCode()
+  // 清除验证码错误
+  validationErrors.verificationCode = ''
 }
 
+// 实时验证用户名
+watch(username, () => {
+  if (username.value) {
+    if (username.value.length < 3) {
+      validationErrors.username = '用户名至少需要3个字符'
+    } else {
+      validationErrors.username = ''
+    }
+  } else {
+    validationErrors.username = ''
+  }
+})
 
+// 实时验证密码
+watch(password, () => {
+  if (password.value) {
+    if (password.value.length < 6) {
+      validationErrors.password = '密码至少需要6个字符'
+    } else {
+      validationErrors.password = ''
+    }
+  } else {
+    validationErrors.password = ''
+  }
+})
+
+// 实时验证验证码
+watch(verificationCode, () => {
+  if (verificationCode.value) {
+    if (verificationCode.value.length < 4) {
+      validationErrors.verificationCode = '验证码需要4个字符'
+    } else {
+      validationErrors.verificationCode = ''
+    }
+  } else {
+    validationErrors.verificationCode = ''
+  }
+})
+
+// 验证表单
+const validateForm = () => {
+  let isValid = true
+  errorMessage.value = ''
+  
+  // 验证用户名
+  if (!username.value.trim()) {
+    validationErrors.username = '请输入管理员账号'
+    isValid = false
+  } else if (username.value.length < 3) {
+    validationErrors.username = '用户名至少需要3个字符'
+    isValid = false
+  } else {
+    validationErrors.username = ''
+  }
+  
+  // 验证密码
+  if (!password.value.trim()) {
+    validationErrors.password = '请输入密码'
+    isValid = false
+  } else if (password.value.length < 6) {
+    validationErrors.password = '密码至少需要6个字符'
+    isValid = false
+  } else {
+    validationErrors.password = ''
+  }
+  
+  // 验证验证码
+  if (!verificationCode.value.trim()) {
+    validationErrors.verificationCode = '请输入验证码'
+    isValid = false
+  } else if (verificationCode.value.length < 4) {
+    validationErrors.verificationCode = '验证码需要4个字符'
+    isValid = false
+  } else if (verificationCode.value.toLowerCase() !== currentCode.value.toLowerCase()) {
+    validationErrors.verificationCode = '验证码错误'
+    refreshCode()
+    isValid = false
+  } else {
+    validationErrors.verificationCode = ''
+  }
+  
+  return isValid
+}
 
 const handleLogin = async () => {
-  // 简单的表单验证
-  if (!username.value.trim() || !password.value.trim() || !verificationCode.value.trim()) {
-    errorMessage.value = '请填写所有必填字段'
-    return
-  }
-
-  // 验证验证码
-  if (verificationCode.value.toLowerCase() !== currentCode.value.toLowerCase()) {
-    errorMessage.value = '验证码错误'
-    refreshCode()
+  // 验证表单
+  if (!validateForm()) {
     return
   }
 
@@ -112,8 +195,11 @@ const handleLogin = async () => {
             class="form-input" 
             v-model="username" 
             placeholder="请输入管理员账号"
-            required
+            :class="{ 'error': validationErrors.username }"
           />
+          <div v-if="validationErrors.username" class="form-error">
+            {{ validationErrors.username }}
+          </div>
         </div>
         
         <div class="form-group">
@@ -123,8 +209,11 @@ const handleLogin = async () => {
             class="form-input" 
             v-model="password" 
             placeholder="请输入密码"
-            required
+            :class="{ 'error': validationErrors.password }"
           />
+          <div v-if="validationErrors.password" class="form-error">
+            {{ validationErrors.password }}
+          </div>
         </div>
         
         <div class="form-group">
@@ -135,7 +224,7 @@ const handleLogin = async () => {
               class="form-input verification-input" 
               v-model="verificationCode" 
               placeholder="请输入验证码"
-              required
+              :class="{ 'error': validationErrors.verificationCode }"
             />
             <div 
               class="verification-code-display" 
@@ -144,6 +233,9 @@ const handleLogin = async () => {
             >
               {{ currentCode }}
             </div>
+          </div>
+          <div v-if="validationErrors.verificationCode" class="form-error">
+            {{ validationErrors.verificationCode }}
           </div>
         </div>
         
@@ -355,6 +447,25 @@ const handleLogin = async () => {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
+}
+
+/* 表单错误提示 */
+.form-error {
+  color: #c62828;
+  font-size: 12px;
+  margin-top: 6px;
+  text-align: left;
+}
+
+/* 错误输入框样式 */
+.form-input.error {
+  border-color: #c62828;
+  background-color: #ffebee;
+}
+
+.form-input.error:focus {
+  border-color: #c62828;
+  box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.2);
 }
 
 @media (max-width: 480px) {

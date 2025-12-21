@@ -180,6 +180,7 @@ const editUser = (userId) => {
       username: user.name || '',
       email: user.email || '',
       role: user.role || '',
+      status: user.status || 'active',
       studentNo: user.studentId || '',
       major: user.major || '',
       employeeId: user.employeeId || '',
@@ -281,9 +282,13 @@ const saveEdit = async () => {
     
     // 可选：如果有其他字段也需要更新
     if (editForm.value.status && editForm.value.status !== currentUser.value.status) {
-      userData.status = editForm.value.status
-      if (editForm.value.status !== 'ACTIVE' && editForm.value.statusReason) {
-        userData.statusReason = editForm.value.statusReason.trim()
+      // 将UI状态转换为后端状态
+      const backendStatus = uiStatusToBackend(editForm.value.status)
+      userData.status = backendStatus
+      // 添加状态变更原因
+      const statusReason = backendStatus === 'DISABLED' ? '管理员禁用账号' : backendStatus === 'LOCKED' ? '管理员设置为待审核' : undefined
+      if (statusReason) {
+        userData.statusReason = statusReason
       }
     }
     
@@ -626,10 +631,15 @@ const toggleUserStatus = async (userId) => {
   }
   
   console.log('切换用户状态 - 用户信息:', userToUpdate)
-  const newStatus = userToUpdate.status === 'active' ? 'DISABLED' : 'ACTIVE'
+  // 确定新状态：
+  // - 如果当前是active，则切换为disabled
+  // - 如果当前是disabled或pending，则切换为active
+  const newBackendStatus = userToUpdate.status === 'active' ? 'DISABLED' : 'ACTIVE'
+  const statusReason = userToUpdate.status === 'active' ? '管理员禁用账号' : undefined
+  
   try {
-    await changeUserStatus(userToUpdate.id, newStatus, newStatus === 'DISABLED' ? '管理员禁用账号' : undefined)
-    const uiStatus = backendStatusToUi(newStatus)
+    await changeUserStatus(userToUpdate.id, newBackendStatus, statusReason)
+    const uiStatus = backendStatusToUi(newBackendStatus)
     alert(`用户状态已更新为：${getStatusText(uiStatus)}`)
   } catch (err) {
     console.error('切换用户状态失败:', err)
@@ -646,7 +656,7 @@ const changeUserStatus = async (userId, backendStatus, reason = '') => {
     console.log('更新用户状态 - userId:', userIdStr, 'status:', backendStatus)
     
     // 验证状态值是否有效
-    const validStatuses = ['ACTIVE', 'INACTIVE', 'PENDING']
+    const validStatuses = ['ACTIVE', 'DISABLED', 'LOCKED']
     if (!validStatuses.includes(backendStatus)) {
       alert(`无效的状态值: ${backendStatus}，请使用 ${validStatuses.join('、')}`)
       return false
@@ -674,8 +684,8 @@ const changeUserStatus = async (userId, backendStatus, reason = '') => {
     // 确认操作
     const statusText = {
       ACTIVE: '激活',
-      INACTIVE: '停用',
-      PENDING: '待审核'
+      DISABLED: '禁用',
+      LOCKED: '待审核'
     }
     
     if (!confirm(`确定要将用户状态更新为「${statusText[backendStatus]}」吗？${backendStatus !== 'ACTIVE' ? `\n原因：${reason}` : ''}`)) {
@@ -1025,7 +1035,7 @@ onMounted(() => {
             </div>
             <div class="form-group">
               <label class="form-label">状态</label>
-              <select class="form-input" v-model="currentUser.status" @change="toggleUserStatus(currentUser.id)">
+              <select class="form-input" v-model="editForm.status">
                 <option value="active">已激活</option>
                 <option value="pending">待审核</option>
                 <option value="suspended">已禁用</option>
@@ -1791,29 +1801,164 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
+/* 响应式设计 - 平板端 */
+@media (max-width: 1024px) {
   .header-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
+  
+  .header-actions {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .search-bar {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .search-input {
+    width: 200px;
+  }
+  
+  .filter-tabs {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  
+  .filter-tab {
+    white-space: nowrap;
+  }
+  
+  .action-buttons {
+    gap: 4px;
+  }
+  
+  .btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}
 
+/* 响应式设计 - 小平板端 */
+@media (max-width: 896px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .search-bar {
+    width: 100%;
+  }
+  
   .search-input {
     width: 100%;
   }
-
-  .filter-tabs {
+  
+  /* 表格响应式 */
+  .users-table-container {
+    overflow-x: auto;
+  }
+  
+  .users-table {
+    min-width: 700px;
+  }
+  
+  .action-buttons {
     flex-wrap: wrap;
   }
+}
 
+/* 响应式设计 - 移动端 */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 16px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .filter-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    padding: 0 16px;
+  }
+  
+  .filter-tab {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  
+  .page-content {
+    padding: 16px;
+  }
+  
+  /* 表格移动端优化 */
+  .users-table-container {
+    overflow-x: auto;
+  }
+  
+  .users-table {
+    min-width: 700px;
+  }
+  
+  /* 操作按钮优化 */
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .btn-sm {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  /* 模态框响应式 */
+  .modal-content {
+    width: 95%;
+    margin: 10px;
+    padding: 24px;
+  }
+  
   .form-row {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
 
-  .users-table {
-    display: block;
-    overflow-x: auto;
+/* 响应式设计 - 小屏移动端 */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 16px;
+  }
+  
+  .modal-title {
+    font-size: 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-input {
+    padding: 10px 14px;
+    font-size: 14px;
   }
 }
 

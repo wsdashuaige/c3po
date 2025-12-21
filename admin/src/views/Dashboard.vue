@@ -1,10 +1,10 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import MainLayout from '../components/layout/MainLayout.vue'
 import { dashboardAPI } from '../services/api.js'
 import { mockAPI } from '../services/mockData.js'
-// 导入ECharts组件和配置
+// 导入ECharts组件和配置（使用按需导入）
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
@@ -14,7 +14,9 @@ import {
   GridComponent,
   LegendComponent
 } from 'echarts/components'
-import VChart from 'vue-echarts'
+// 懒加载ECharts组件
+import { defineAsyncComponent } from 'vue'
+const VChart = defineAsyncComponent(() => import('vue-echarts'))
 
 // 使用必要的组件
 use([
@@ -52,14 +54,16 @@ const fetchDashboardData = async () => {
   
   try {
     if (useMock) {
-      const dashboardStatsApi = mockAPI.getDashboardStats
-      const recentActivitiesApi = mockAPI.getRecentActivities
-      const pendingTasksApi = mockAPI.getPendingTasks
-      const [statsResponse, activitiesResponse, tasksResponse] = await Promise.all([
-        dashboardStatsApi(),
-        recentActivitiesApi(),
-        pendingTasksApi()
-      ])
+      // 使用mock数据时添加延迟模拟网络请求
+      const [statsResponse, activitiesResponse, tasksResponse] = await new Promise(resolve => {
+        setTimeout(async () => {
+          resolve(await Promise.all([
+            mockAPI.getDashboardStats(),
+            mockAPI.getRecentActivities(),
+            mockAPI.getPendingTasks()
+          ]))
+        }, 500)
+      })
       applyMockStats(statsResponse)
       applyMockActivities(activitiesResponse)
       applyMockTasks(tasksResponse)
@@ -82,6 +86,18 @@ const fetchDashboardData = async () => {
     loading.value = false
   }
 }
+
+// 防抖函数
+const debounce = (fn, delay) => {
+  let timer = null
+  return (...args) => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
+
+// 防抖处理的fetchDashboardData
+const debouncedFetchData = debounce(fetchDashboardData, 300)
 
 // 设置默认数据
 const setDefaultData = () => {
