@@ -8,10 +8,12 @@ import fin.c3po.assignment.Assignment;
 import fin.c3po.course.Course;
 import fin.c3po.course.CourseRepository;
 import fin.c3po.common.web.ApiResponse;
+import fin.c3po.notify.NotificationService;
 import fin.c3po.submission.Submission;
 import fin.c3po.submission.SubmissionRepository;
 import fin.c3po.submission.SubmissionStatus;
 import fin.c3po.submission.dto.AppealSubmissionRequest;
+import fin.c3po.submission.dto.BatchGradeSubmissionRequest;
 import fin.c3po.submission.dto.CreateSubmissionRequest;
 import fin.c3po.submission.dto.GradeSubmissionRequest;
 import fin.c3po.submission.dto.SubmissionResponse;
@@ -49,6 +51,7 @@ public class SubmissionController {
     private final AssignmentRepository assignmentRepository;
     private final CourseRepository courseRepository;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     private static final TypeReference<List<GradeSubmissionRequest.RubricScore>> RUBRIC_TYPE = new TypeReference<>() {
     };
@@ -219,7 +222,109 @@ public class SubmissionController {
         submission.setAppealReason(null);
         submission.setAppealedAt(null);
         Submission saved = submissionRepository.save(submission);
+
+        // 如果发布评分，通知学生
+        if (request.isPublish()) {
+            String title = "作业评分已完成";
+            String content = String.format("您的作业《%s》已完成评分，得分：%d分。",
+                    assignment.getTitle(), saved.getScore());
+            if (saved.getFeedback() != null && !saved.getFeedback().isBlank()) {
+                content += String.format("评语：%s", saved.getFeedback());
+            }
+            notificationService.notifyStudent(saved.getStudentId(), "assignment", title, content);
+        }
+
         return ApiResponse.success(toResponse(saved));
+    }
+
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PostMapping("/assignments/{assignmentId}/submissions/batch-grade")
+    public ApiResponse<List<SubmissionResponse>> batchGradeSubmissions(
+            @PathVariable UUID assignmentId,
+            @Valid @RequestBody BatchGradeSubmissionRequest request,
+            @AuthenticationPrincipal UserAccount currentUser) {
+
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
+        ensureCourseAccess(currentUser, assignment.getCourseId());
+
+        // 收集所有需要评分的submission ID
+        List<UUID> submissionIds = request.getGrades().stream()
+                .map(BatchGradeSubmissionRequest.GradeItem::getSubmissionId)
+                .toList();
+
+        // 检查是否有重复的submissionId
+        if (submissionIds.size() != submissionIds.stream().distinct().count()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Duplicate submission IDs in request");
+        }
+
+        // 批量查询所有submissions
+        List<Submission> submissions = submissionRepository.findAllById(submissionIds);
+
+        // 验证是否有缺失的submission
+        if (submissions.size() != submissionIds.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Some submissions not found");
+        }
+
+        // 验证所有submissions都属于指定的assignment
+        for (Submission submission : submissions) {
+            if (!submission.getAssignmentId().equals(assignmentId)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Submission " + submission.getId() + " does not belong to assignment " + assignmentId);
+            }
+        }
+
+        // 创建submission ID到GradeItem的映射
+        java.util.Map<UUID, BatchGradeSubmissionRequest.GradeItem> gradeMap = request.getGrades().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        BatchGradeSubmissionRequest.GradeItem::getSubmissionId,
+                        item -> item));
+
+        // 批量更新评分
+        for (Submission submission : submissions) {
+            BatchGradeSubmissionRequest.GradeItem gradeItem = gradeMap.get(submission.getId());
+            if (gradeItem == null) {
+                continue;
+            }
+
+            submission.setScore(gradeItem.getScore());
+            submission.setFeedback(gradeItem.getFeedback());
+            submission.setRubricScores(toJson(gradeItem.getRubricScores()));
+            submission.setGradingTeacherId(currentUser.getId());
+            if (gradeItem.isPublish()) {
+                submission.setStatus(SubmissionStatus.GRADED);
+            }
+            submission.setAppealReason(null);
+            submission.setAppealedAt(null);
+        }
+
+        // 批量保存
+        List<Submission> saved = submissionRepository.saveAll(submissions);
+
+        // 如果发布评分，通知所有被评分的学生
+        List<Submission> publishedSubmissions = saved.stream()
+                .filter(s -> {
+                    BatchGradeSubmissionRequest.GradeItem item = gradeMap.get(s.getId());
+                    return item != null && item.isPublish();
+                })
+                .toList();
+
+        for (Submission submission : publishedSubmissions) {
+            String title = "作业评分已完成";
+            String content = String.format("您的作业《%s》已完成评分，得分：%d分。",
+                    assignment.getTitle(), submission.getScore());
+            if (submission.getFeedback() != null && !submission.getFeedback().isBlank()) {
+                content += String.format("评语：%s", submission.getFeedback());
+            }
+            notificationService.notifyStudent(submission.getStudentId(), "assignment", title, content);
+        }
+
+        // 转换为响应
+        List<SubmissionResponse> responses = saved.stream()
+                .map(this::toResponse)
+                .toList();
+
+        return ApiResponse.success(responses);
     }
 
     @PreAuthorize("hasRole('STUDENT')")
@@ -245,6 +350,18 @@ public class SubmissionController {
         submission.setAppealedAt(Instant.now());
 
         Submission saved = submissionRepository.save(submission);
+
+        // 通知教师有学生申诉
+        Assignment assignment = assignmentRepository.findById(saved.getAssignmentId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found"));
+        Course course = courseRepository.findById(assignment.getCourseId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
+
+        String title = "作业申诉通知";
+        String content = String.format("学生已对作业《%s》提出申诉，请及时处理。申诉理由：%s",
+                assignment.getTitle(), request.getReason());
+        notificationService.notifyTeacher(course.getTeacherId(), "assignment", title, content);
+
         return ApiResponse.success(toResponse(saved));
     }
 

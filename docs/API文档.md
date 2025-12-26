@@ -335,7 +335,7 @@
 
 #### POST `/api/v1/admin/users`
 - **角色**：管理员
-- **描述**：批量创建用户。支持在同一次请求中混合创建学生、教师、管理员账号，同时返回逐条校验结果。密码采用明文传入，后端自动加密存储。
+- **描述**：批量创建用户。支持在同一次请求中混合创建学生、教师、管理员账号。采用"先验证后创建"的策略：首先验证所有预创建用户的有效性（格式校验、唯一性校验等），如果所有用户验证通过，则统一批量创建；如果存在任何验证错误，返回所有错误信息，不创建任何用户。密码采用明文传入，后端自动加密存储。
 - **请求体**
   ```json
   {
@@ -497,6 +497,70 @@
   - `sort`：`field,(asc|desc)`，默认 `createdAt,desc`
 - **响应数据**：`CourseResponse[]`，每个元素附带 `metrics` 指标（当前选课人数、作业数量、章节数量）。
 - **说明**：分页信息写入 `meta.page / meta.pageSize / meta.total / meta.sort`。
+
+#### GET `/api/v1/courses/plaza`
+- **角色**：公开（学生登录后可查看选课状态）
+- **描述**：课程广场接口，专门用于学生浏览和选课。默认只显示已发布的课程（`PUBLISHED`状态），包含教师信息和选课状态。
+- **查询参数**：
+  - `page`（默认 1）、`pageSize`（默认 20，最大 100）
+  - `keyword`：课程名称模糊搜索（忽略大小写）
+  - `semester`：按学期筛选（精确匹配）
+  - `credit`：按学分筛选（精确匹配）
+  - `department`：按教师院系筛选（忽略大小写，模糊匹配）
+  - `sort`：`field,(asc|desc)`，支持字段 `createdAt|updatedAt|name|enrolledCount`，默认 `enrolledCount,desc`（热门课程优先）。
+- **响应数据**：`CoursePlazaResponse[]`，包含以下信息：
+  - 课程基本信息（id、name、semester、credit、status、enrollLimit等）
+  - `enrolledCount`：当前选课人数
+  - `assignments`：作业数量
+  - `modules`：章节数量
+  - `teacher`：教师信息（id、username、department、title）
+  - `enrollmentStatus`：选课状态（仅当学生已登录时返回）
+    - `enrolled`：是否已选课
+    - `canEnroll`：是否可以选课
+    - `reason`：如果不能选课，说明原因（如"课程名额已满"、"课程未开放选课"）
+- **响应示例**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "7f7d5669-20e5-4f84-b897-17c1cfe5a1c0",
+      "name": "数据结构与算法",
+      "semester": "2025-春季",
+      "credit": 4,
+      "status": "PUBLISHED",
+      "enrollLimit": 50,
+      "enrolledCount": 35,
+      "assignments": 8,
+      "modules": 12,
+      "teacher": {
+        "id": "53d5f8f4-136f-4a73-9bde-d3f7f4b0f1ed",
+        "username": "prof-zhang",
+        "department": "计算机学院",
+        "title": "教授"
+      },
+      "enrollmentStatus": {
+        "enrolled": false,
+        "canEnroll": true,
+        "reason": null
+      },
+      "createdAt": "2025-01-15T08:00:00Z",
+      "updatedAt": "2025-01-20T10:30:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 45,
+    "sort": "enrolledCount,desc"
+  }
+}
+```
+- **业务规则**
+  - 只返回 `PUBLISHED` 状态的课程
+  - 如果学生已登录，会显示该学生的选课状态
+  - 按选课人数排序时，会在内存中排序（因为这是计算字段）
+  - 如果课程名额已满，`canEnroll` 为 `false`，`reason` 为 "课程名额已满"
 
 #### GET `/api/v1/courses/{courseId}`
 - **角色**：任意已登录用户。
@@ -894,6 +958,48 @@
   - `score` 范围 0-100；`rubricScores` 可为空。
   - `publish=false` 时仅保存草稿，不修改提交状态。
   - 提交评分后清理历史申诉状态，`publish=true` 时状态改为 `GRADED`。
+
+#### POST `/api/v1/assignments/{assignmentId}/submissions/batch-grade`
+- **角色**：教师 / 管理员
+- **描述**：批量对指定作业的多个提交进行评分，适用于一次性批改多个学生作业的场景。
+- **请求体**
+```json
+{
+  "grades": [
+    {
+      "submissionId": "7f7d5669-20e5-4f84-b897-17c1cfe5a1c0",
+      "score": 92,
+      "rubricScores": [
+        {"criterion": "正确性", "score": 50},
+        {"criterion": "代码规范", "score": 28},
+        {"criterion": "创新性", "score": 14}
+      ],
+      "feedback": "代码质量很高，逻辑清晰。",
+      "publish": true
+    },
+    {
+      "submissionId": "8a8e6770-31f6-5g95-c908-28d2dgf6b2d1",
+      "score": 78,
+      "rubricScores": [
+        {"criterion": "正确性", "score": 40},
+        {"criterion": "代码规范", "score": 25},
+        {"criterion": "创新性", "score": 13}
+      ],
+      "feedback": "基本功能实现正确，但代码注释较少。",
+      "publish": true
+    }
+  ]
+}
+```
+- **业务规则**
+  - `grades` 数组不能为空，至少包含一个评分项。
+  - 每个评分项的 `submissionId` 必须存在且属于指定的 `assignmentId`。
+  - `score` 范围 0-100；`rubricScores` 可为空。
+  - `publish=false` 时仅保存草稿，不修改提交状态；`publish=true` 时状态改为 `GRADED`。
+  - 批量评分后清理所有提交的历史申诉状态。
+  - 如果存在无效的 `submissionId` 或提交不属于指定作业，返回 `400 Bad Request`。
+- **响应**：返回 `SubmissionResponse[]`，包含所有已评分的提交信息。
+- **错误码**：`404` 作业不存在；`403` 非课程负责人访问；`400` 请求参数无效（提交不存在或不属于指定作业）。
 
 #### POST `/api/v1/submissions/{submissionId}/appeal`
 - **角色**：学生（提交者本人）

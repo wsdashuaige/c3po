@@ -14,10 +14,13 @@ import fin.c3po.course.dto.CourseAnalyticsResponse;
 import fin.c3po.course.dto.CourseEnrollmentResponse;
 import fin.c3po.course.dto.CoursePublishResponse;
 import fin.c3po.course.dto.CourseResponse;
+import fin.c3po.course.dto.CoursePlazaResponse;
 import fin.c3po.course.dto.CreateCourseRequest;
 import fin.c3po.course.dto.StudentCourseResponse;
 import fin.c3po.course.dto.UpdateCourseRequest;
 import fin.c3po.course.dto.CourseStudentResponse;
+import fin.c3po.profile.TeacherProfile;
+import fin.c3po.profile.TeacherProfileRepository;
 import fin.c3po.selection.CourseSelection;
 import fin.c3po.selection.CourseSelectionRepository;
 import fin.c3po.selection.SelectionStatus;
@@ -80,6 +83,7 @@ public class CourseController {
     private final SubmissionRepository submissionRepository;
     private final ApprovalRequestRepository approvalRequestRepository;
     private final UserAccountRepository userAccountRepository;
+    private final TeacherProfileRepository teacherProfileRepository;
     private final ObjectMapper objectMapper;
 
     @GetMapping("/courses")
@@ -110,6 +114,106 @@ public class CourseController {
                 .stream()
                 .map(this::toCourseResponse)
                 .toList();
+
+        PageMeta meta = PageMeta.builder()
+                .page(pageable.getPageNumber() + 1)
+                .pageSize(pageable.getPageSize())
+                .total(coursePage.getTotalElements())
+                .sort(pageable.getSort().stream()
+                        .map(order -> order.getProperty() + "," + order.getDirection().name().toLowerCase(Locale.ROOT))
+                        .collect(Collectors.joining(";")))
+                .build();
+
+        return ApiResponse.success(responses, meta);
+    }
+
+    /**
+     * 课程广场接口 - 专门用于学生浏览和选课
+     * 默认只显示已发布的课程，包含教师信息和选课状态
+     */
+    @GetMapping("/courses/plaza")
+    public ApiResponse<List<CoursePlazaResponse>> coursePlaza(
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "pageSize", defaultValue = "20") int pageSize,
+            @RequestParam(name = "keyword", required = false) String keyword,
+            @RequestParam(name = "semester", required = false) String semester,
+            @RequestParam(name = "credit", required = false) Integer credit,
+            @RequestParam(name = "department", required = false) String department,
+            @RequestParam(name = "sort", defaultValue = "enrolledCount,desc") String sort,
+            @AuthenticationPrincipal UserAccount currentUser) {
+
+        Pageable pageable = buildPageable(page, pageSize, sort);
+        Specification<Course> spec = (root, query, cb) -> 
+                cb.equal(root.get("status"), CourseStatus.PUBLISHED); // 只显示已发布的课程
+
+        if (keyword != null && !keyword.isBlank()) {
+            String pattern = "%" + keyword.toLowerCase(Locale.ROOT) + "%";
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("name")), pattern));
+        }
+        if (semester != null && !semester.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("semester"), semester));
+        }
+        if (credit != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("credit"), credit));
+        }
+
+        Page<Course> coursePage = courseRepository.findAll(spec, pageable);
+        List<Course> courses = coursePage.getContent();
+
+        // 收集所有教师ID
+        Set<UUID> teacherIds = courses.stream()
+                .map(Course::getTeacherId)
+                .collect(Collectors.toSet());
+
+        // 批量查询教师信息
+        Map<UUID, TeacherProfile> teacherProfileMap = teacherProfileRepository.findByUserIdIn(teacherIds)
+                .stream()
+                .collect(Collectors.toMap(TeacherProfile::getUserId, profile -> profile));
+
+        // 批量查询用户信息
+        Map<UUID, UserAccount> teacherAccountMap = userAccountRepository.findAllById(teacherIds)
+                .stream()
+                .collect(Collectors.toMap(UserAccount::getId, account -> account));
+
+        // 如果按部门筛选，需要过滤
+        if (department != null && !department.isBlank()) {
+            courses = courses.stream()
+                    .filter(course -> {
+                        TeacherProfile profile = teacherProfileMap.get(course.getTeacherId());
+                        return profile != null && profile.getDepartment() != null
+                                && profile.getDepartment().toLowerCase(Locale.ROOT)
+                                .contains(department.toLowerCase(Locale.ROOT));
+                    })
+                    .toList();
+        }
+
+        // 获取当前学生的选课信息（如果已登录）
+        final Map<UUID, CourseSelection> studentSelections;
+        if (currentUser != null && currentUser.getRole() == fin.c3po.user.UserRole.STUDENT) {
+            List<CourseSelection> selections = courseSelectionRepository.findByStudentId(currentUser.getId());
+            studentSelections = selections.stream()
+                    .collect(Collectors.toMap(CourseSelection::getCourseId, selection -> selection));
+        } else {
+            studentSelections = new HashMap<>();
+        }
+
+        // 转换为响应
+        final List<Course> finalCourses = courses;
+        List<CoursePlazaResponse> responses = finalCourses.stream()
+                .map(course -> toCoursePlazaResponse(course, teacherProfileMap, teacherAccountMap, 
+                        studentSelections, currentUser))
+                .toList();
+
+        // 如果按选课人数排序，需要在内存中排序
+        if (sort != null && sort.startsWith("enrolledCount")) {
+            boolean ascending = sort.contains(",asc");
+            responses = responses.stream()
+                    .sorted((a, b) -> {
+                        int comparison = Integer.compare(a.getEnrolledCount(), b.getEnrolledCount());
+                        return ascending ? comparison : -comparison;
+                    })
+                    .toList();
+        }
 
         PageMeta meta = PageMeta.builder()
                 .page(pageable.getPageNumber() + 1)
@@ -583,6 +687,13 @@ public class CourseController {
         if (parts.length > 1) {
             direction = "asc".equalsIgnoreCase(parts[1]) ? Sort.Direction.ASC : Sort.Direction.DESC;
         }
+        
+        // 对于enrolledCount排序，需要在内存中排序，因为这是计算字段
+        // 这里先返回默认排序，后续在coursePlaza方法中处理
+        if ("enrolledCount".equals(property)) {
+            return Sort.by(Sort.Direction.DESC, "createdAt"); // 临时排序，后续会重新排序
+        }
+        
         return Sort.by(direction, property);
     }
 
@@ -606,6 +717,72 @@ public class CourseController {
                         .assignments((int) Math.min(assignments, Integer.MAX_VALUE))
                         .modules((int) Math.min(modules, Integer.MAX_VALUE))
                         .build())
+                .build();
+    }
+
+    private CoursePlazaResponse toCoursePlazaResponse(Course course, 
+                                                      Map<UUID, TeacherProfile> teacherProfileMap,
+                                                      Map<UUID, UserAccount> teacherAccountMap,
+                                                      Map<UUID, CourseSelection> studentSelections,
+                                                      UserAccount currentUser) {
+        long enrolledCount = courseSelectionRepository.countByCourseIdAndStatus(course.getId(), SelectionStatus.ENROLLED);
+        long assignments = assignmentRepository.countByCourseId(course.getId());
+        long modules = courseModuleRepository.countByCourseId(course.getId());
+
+        // 构建教师信息
+        CoursePlazaResponse.TeacherInfo teacherInfo = null;
+        UserAccount teacherAccount = teacherAccountMap.get(course.getTeacherId());
+        TeacherProfile teacherProfile = teacherProfileMap.get(course.getTeacherId());
+        if (teacherAccount != null) {
+            teacherInfo = CoursePlazaResponse.TeacherInfo.builder()
+                    .id(teacherAccount.getId())
+                    .username(teacherAccount.getUsername())
+                    .department(teacherProfile != null ? teacherProfile.getDepartment() : null)
+                    .title(teacherProfile != null ? teacherProfile.getTitle() : null)
+                    .build();
+        }
+
+        // 构建选课状态（仅当学生已登录时）
+        CoursePlazaResponse.EnrollmentStatus enrollmentStatus = null;
+        if (currentUser != null && currentUser.getRole() == fin.c3po.user.UserRole.STUDENT) {
+            CourseSelection selection = studentSelections.get(course.getId());
+            boolean enrolled = selection != null && selection.getStatus() == SelectionStatus.ENROLLED;
+            boolean canEnroll = !enrolled && course.getStatus() == CourseStatus.PUBLISHED;
+            String reason = null;
+            
+            if (!canEnroll && !enrolled) {
+                if (course.getStatus() != CourseStatus.PUBLISHED) {
+                    reason = "课程未开放选课";
+                } else if (course.getEnrollLimit() != null) {
+                    long currentEnrolledCount = courseSelectionRepository.countByCourseIdAndStatus(
+                            course.getId(), SelectionStatus.ENROLLED);
+                    if (currentEnrolledCount >= course.getEnrollLimit()) {
+                        reason = "课程名额已满";
+                    }
+                }
+            }
+            
+            enrollmentStatus = CoursePlazaResponse.EnrollmentStatus.builder()
+                    .enrolled(enrolled)
+                    .canEnroll(canEnroll && reason == null)
+                    .reason(reason)
+                    .build();
+        }
+
+        return CoursePlazaResponse.builder()
+                .id(course.getId())
+                .name(course.getName())
+                .semester(course.getSemester())
+                .credit(course.getCredit())
+                .status(course.getStatus())
+                .enrollLimit(course.getEnrollLimit())
+                .enrolledCount((int) Math.min(enrolledCount, Integer.MAX_VALUE))
+                .assignments((int) Math.min(assignments, Integer.MAX_VALUE))
+                .modules((int) Math.min(modules, Integer.MAX_VALUE))
+                .teacher(teacherInfo)
+                .enrollmentStatus(enrollmentStatus)
+                .createdAt(course.getCreatedAt())
+                .updatedAt(course.getUpdatedAt())
                 .build();
     }
 
