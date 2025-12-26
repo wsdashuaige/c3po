@@ -498,6 +498,70 @@
 - **响应数据**：`CourseResponse[]`，每个元素附带 `metrics` 指标（当前选课人数、作业数量、章节数量）。
 - **说明**：分页信息写入 `meta.page / meta.pageSize / meta.total / meta.sort`。
 
+#### GET `/api/v1/courses/plaza`
+- **角色**：公开（学生登录后可查看选课状态）
+- **描述**：课程广场接口，专门用于学生浏览和选课。默认只显示已发布的课程（`PUBLISHED`状态），包含教师信息和选课状态。
+- **查询参数**：
+  - `page`（默认 1）、`pageSize`（默认 20，最大 100）
+  - `keyword`：课程名称模糊搜索（忽略大小写）
+  - `semester`：按学期筛选（精确匹配）
+  - `credit`：按学分筛选（精确匹配）
+  - `department`：按教师院系筛选（忽略大小写，模糊匹配）
+  - `sort`：`field,(asc|desc)`，支持字段 `createdAt|updatedAt|name|enrolledCount`，默认 `enrolledCount,desc`（热门课程优先）。
+- **响应数据**：`CoursePlazaResponse[]`，包含以下信息：
+  - 课程基本信息（id、name、semester、credit、status、enrollLimit等）
+  - `enrolledCount`：当前选课人数
+  - `assignments`：作业数量
+  - `modules`：章节数量
+  - `teacher`：教师信息（id、username、department、title）
+  - `enrollmentStatus`：选课状态（仅当学生已登录时返回）
+    - `enrolled`：是否已选课
+    - `canEnroll`：是否可以选课
+    - `reason`：如果不能选课，说明原因（如"课程名额已满"、"课程未开放选课"）
+- **响应示例**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "7f7d5669-20e5-4f84-b897-17c1cfe5a1c0",
+      "name": "数据结构与算法",
+      "semester": "2025-春季",
+      "credit": 4,
+      "status": "PUBLISHED",
+      "enrollLimit": 50,
+      "enrolledCount": 35,
+      "assignments": 8,
+      "modules": 12,
+      "teacher": {
+        "id": "53d5f8f4-136f-4a73-9bde-d3f7f4b0f1ed",
+        "username": "prof-zhang",
+        "department": "计算机学院",
+        "title": "教授"
+      },
+      "enrollmentStatus": {
+        "enrolled": false,
+        "canEnroll": true,
+        "reason": null
+      },
+      "createdAt": "2025-01-15T08:00:00Z",
+      "updatedAt": "2025-01-20T10:30:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 20,
+    "total": 45,
+    "sort": "enrolledCount,desc"
+  }
+}
+```
+- **业务规则**
+  - 只返回 `PUBLISHED` 状态的课程
+  - 如果学生已登录，会显示该学生的选课状态
+  - 按选课人数排序时，会在内存中排序（因为这是计算字段）
+  - 如果课程名额已满，`canEnroll` 为 `false`，`reason` 为 "课程名额已满"
+
 #### GET `/api/v1/courses/{courseId}`
 - **角色**：任意已登录用户。
 - **响应数据**：单个 `CourseResponse`。
