@@ -12,6 +12,7 @@ import fin.c3po.assignment.dto.UpdateAssignmentRequest;
 import fin.c3po.common.web.ApiResponse;
 import fin.c3po.course.Course;
 import fin.c3po.course.CourseRepository;
+import fin.c3po.notify.NotificationService;
 import fin.c3po.user.UserAccount;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class AssignmentController {
     private final AssignmentRepository assignmentRepository;
     private final CourseRepository courseRepository;
     private final ObjectMapper objectMapper;
+    private final NotificationService notificationService;
 
     private static final TypeReference<List<CreateAssignmentRequest.RubricItem>> RUBRIC_TYPE = new TypeReference<>() {
     };
@@ -106,6 +108,11 @@ public class AssignmentController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Course not found"));
         ensureCourseOwner(currentUser, course);
 
+        // 记录是否修改了截止时间（用于通知）
+        boolean deadlineChanged = request.getDeadline() != null 
+                && !request.getDeadline().equals(assignment.getDeadline());
+        Instant oldDeadline = assignment.getDeadline();
+
         if (request.getTitle() != null) {
             assignment.setTitle(request.getTitle());
         }
@@ -133,6 +140,17 @@ public class AssignmentController {
         }
 
         Assignment saved = assignmentRepository.save(assignment);
+
+        // 如果作业已发布且截止时间修改，通知选课学生
+        if (Boolean.TRUE.equals(saved.getPublished()) && deadlineChanged) {
+            String title = "作业截止时间已更新";
+            String content = String.format("作业《%s》的截止时间已更新。原截止时间：%s，新截止时间：%s。请及时查看并完成提交。",
+                    saved.getTitle(),
+                    oldDeadline != null ? oldDeadline.toString() : "未设置",
+                    saved.getDeadline() != null ? saved.getDeadline().toString() : "未设置");
+            notificationService.notifyEnrolledStudents(saved.getCourseId(), "assignment", title, content);
+        }
+
         return ApiResponse.success(toResponse(saved));
     }
 
@@ -154,6 +172,16 @@ public class AssignmentController {
             assignment.setReleaseAt(Instant.now());
         }
         Assignment saved = assignmentRepository.save(assignment);
+
+        // 通知选课学生作业已发布
+        String title = "新作业已发布";
+        String content = String.format("课程《%s》发布了新作业《%s》。", course.getName(), saved.getTitle());
+        if (saved.getDeadline() != null) {
+            content += String.format("截止时间：%s。", saved.getDeadline());
+        }
+        content += "请及时查看并完成提交。";
+        notificationService.notifyEnrolledStudents(saved.getCourseId(), "assignment", title, content);
+
         return ApiResponse.success(toResponse(saved));
     }
 
